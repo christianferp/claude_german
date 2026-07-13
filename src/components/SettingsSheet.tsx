@@ -13,6 +13,8 @@ export function SettingsSheet() {
   const setView = useAppStore((state) => state.setView);
   const setSettingsOpen = useAppStore((state) => state.setSettingsOpen);
   const resetProgress = useAppStore((state) => state.resetProgress);
+  const geminiApiKey = useAppStore((state) => state.geminiApiKey);
+  const setGeminiApiKey = useAppStore((state) => state.setGeminiApiKey);
   const [confirmingReset, setConfirmingReset] = useState(false);
 
   const close = () => setSettingsOpen(false);
@@ -65,6 +67,34 @@ export function SettingsSheet() {
             </div>
           </>
         )}
+
+        <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
+          AI voice (Gemini)
+        </p>
+        <input
+          type="text"
+          value={geminiApiKey}
+          onChange={(event) => setGeminiApiKey(event.target.value)}
+          placeholder="Paste your Google AI Studio API key"
+          autoComplete="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          aria-label="Gemini API key"
+          className="mt-2 w-full rounded-2xl border-2 border-cream-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-300 focus:border-sage-500 focus:outline-none"
+        />
+        <p className="mt-1.5 px-1 text-xs text-slate-400">
+          Get a free key at{' '}
+          <a
+            href="https://aistudio.google.com/apikey"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-sage-600 underline"
+          >
+            aistudio.google.com/apikey
+          </a>
+          . It stays on this device. Without a key, playback uses the (more robotic) built-in
+          browser voice.
+        </p>
 
         <button
           onClick={() => {
