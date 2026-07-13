@@ -18,8 +18,19 @@ let client: SupabaseClient | null = null;
 
 export function getSupabase(): SupabaseClient | null {
   if (!isBackendConfigured) return null;
-  if (!client) client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  if (!client) {
+    client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      // A magic-link e-mail lands back on this page with tokens in the URL
+      // hash; picking them up here is what completes that sign-in path.
+      auth: { detectSessionInUrl: true, flowType: 'implicit' },
+    });
+  }
   return client;
+}
+
+/** Where magic-link e-mails should send the user back to: this app. */
+function appUrl(): string {
+  return window.location.origin + window.location.pathname;
 }
 
 interface MasteredRow {
@@ -53,7 +64,10 @@ export function initBackend(): void {
 export async function sendLoginCode(email: string): Promise<{ error: string | null }> {
   const supabase = getSupabase();
   if (!supabase) return { error: 'Backend is not configured.' };
-  const { error } = await supabase.auth.signInWithOtp({ email });
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: appUrl() },
+  });
   return { error: error ? error.message : null };
 }
 

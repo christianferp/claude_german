@@ -273,9 +273,16 @@ export function SettingsSheet() {
                   </div>
                 )}
                 {authError && <p className="mt-1.5 px-1 text-xs text-blush-600">{authError}</p>}
-                <p className="mt-1.5 px-1 text-xs text-slate-400">
-                  Optional — sign in with your e-mail to keep your progress across devices.
-                </p>
+                {authPhase === 'code-sent' || authPhase === 'verifying' ? (
+                  <p className="mt-1.5 px-1 text-xs text-slate-400">
+                    Check your e-mail: enter the 6-digit code here — or simply tap the link in the
+                    e-mail, which opens the app already signed in.
+                  </p>
+                ) : (
+                  <p className="mt-1.5 px-1 text-xs text-slate-400">
+                    Optional — sign in with your e-mail to keep your progress across devices.
+                  </p>
+                )}
               </div>
             )}
           </>
