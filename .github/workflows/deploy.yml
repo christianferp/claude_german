@@ -2,9 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    # Also deploys from the active feature branch pre-merge so it can be
-    # tested on a phone; drop it once merged to main.
-    branches: [main, claude/phrase-day-audio-quality-vznqqg]
+    # The github-pages environment only allows deployments from main,
+    # so feature-branch triggers are rejected before the build starts.
+    branches: [main]
   workflow_dispatch:
 
 permissions:
