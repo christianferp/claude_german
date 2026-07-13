@@ -19,6 +19,12 @@ interface AppState {
    * never bleeds into another language/level. Only today's entry is kept.
    */
   phraseShuffle: { key: string; offset: number } | null;
+  /**
+   * User-supplied Google AI Studio key for Gemini TTS. Lives only in this
+   * browser's localStorage — the app is a static site with no backend, so
+   * shipping a shared key would publish it to the world.
+   */
+  geminiApiKey: string;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
@@ -32,6 +38,7 @@ interface AppState {
   markMastered: (phraseId: string, recordingMime: string) => void;
   /** Advance today's phrase to the next one in the pool for this key. */
   shufflePhrase: (key: string) => void;
+  setGeminiApiKey: (key: string) => void;
   setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
@@ -44,6 +51,7 @@ export const useAppStore = create<AppState>()(
       mastered: {},
       widgetEnabled: false,
       phraseShuffle: null,
+      geminiApiKey: '',
       view: 'today',
       settingsOpen: false,
 
@@ -66,6 +74,7 @@ export const useAppStore = create<AppState>()(
             offset: state.phraseShuffle?.key === key ? state.phraseShuffle.offset + 1 : 1,
           },
         })),
+      setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey: geminiApiKey.trim() }),
       setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
@@ -83,6 +92,7 @@ export const useAppStore = create<AppState>()(
         mastered: state.mastered,
         widgetEnabled: state.widgetEnabled,
         phraseShuffle: state.phraseShuffle,
+        geminiApiKey: state.geminiApiKey,
       }),
     },
   ),
