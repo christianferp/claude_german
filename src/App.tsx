@@ -1,12 +1,20 @@
+import { useEffect } from 'react';
 import { SettingsSheet } from './components/SettingsSheet';
 import { TabBar } from './components/TabBar';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
+import { PracticeScreen } from './screens/PracticeScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { WidgetPreviewScreen } from './screens/WidgetPreviewScreen';
+import { initBackend } from './services/backend';
 import { useAppStore } from './store/useAppStore';
 
 export default function App() {
+  // Auth listener + sign-in sync; inert while Supabase is unconfigured.
+  useEffect(() => {
+    initBackend();
+  }, []);
+
   const language = useAppStore((state) => state.language);
   const level = useAppStore((state) =>
     state.language ? state.levels[state.language] : undefined,
@@ -27,8 +35,9 @@ export default function App() {
             {view === 'today' && <TodayScreen />}
             {view === 'library' && <LibraryScreen />}
             {view === 'widget' && <WidgetPreviewScreen />}
+            {view === 'practice' && <PracticeScreen />}
           </main>
-          {view !== 'widget' && <TabBar />}
+          {view !== 'widget' && view !== 'practice' && <TabBar />}
           {settingsOpen && <SettingsSheet />}
         </>
       )}

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useRecordingUrl } from '../hooks/useRecordingUrl';
 import { LANGUAGES } from '../lib/languages';
 import type { MasteredEntry, Phrase } from '../lib/types';
+import { useAppStore } from '../store/useAppStore';
 import { AudioPlayButton } from './AudioPlayButton';
-import { MicIcon } from './icons';
+import { MicIcon, StepsIcon } from './icons';
 import { RecordPanel } from './RecordPanel';
 import { TtsButton } from './TtsButton';
 
@@ -14,6 +15,7 @@ interface LibraryItemProps {
 
 export function LibraryItem({ phrase, entry }: LibraryItemProps) {
   const [rerecording, setRerecording] = useState(false);
+  const startPractice = useAppStore((state) => state.startPractice);
   // masteredAt changes on every re-record, which refreshes the object URL.
   const recordingUrl = useRecordingUrl(phrase.id, entry.masteredAt);
   const meta = LANGUAGES[phrase.language];
@@ -47,6 +49,13 @@ export function LibraryItem({ phrase, entry }: LibraryItemProps) {
         >
           <MicIcon className="h-4 w-4" />
           {rerecording ? 'Cancel' : 'Re-record'}
+        </button>
+        <button
+          onClick={() => startPractice(phrase.id, 'library')}
+          className="flex items-center gap-1.5 rounded-full bg-cream-100 px-3 py-2 text-sm font-semibold text-slate-600 active:bg-cream-200"
+        >
+          <StepsIcon className="h-4 w-4" />
+          Practice
         </button>
       </div>
 

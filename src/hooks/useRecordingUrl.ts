@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { audioStorage } from '../services/audioStorage';
+import { downloadRecording } from '../services/backend';
 
 /**
  * Loads a saved recording from IndexedDB and exposes it as an object URL.
@@ -19,6 +20,8 @@ export function useRecordingUrl(phraseId: string | null, refreshKey: number = 0)
 
     void audioStorage
       .getRecording(phraseId)
+      // Not on this device → try the cloud backup (no-op when signed out).
+      .then((blob) => blob ?? downloadRecording(phraseId))
       .then((blob) => {
         if (cancelled || !blob) return;
         objectUrl = URL.createObjectURL(blob);

@@ -1,8 +1,9 @@
+import { Button } from '../components/Button';
 import { Header } from '../components/Header';
 import { PhraseCard } from '../components/PhraseCard';
 import { RecordPanel } from '../components/RecordPanel';
 import { TtsButton } from '../components/TtsButton';
-import { CheckIcon, LockIcon, ShuffleIcon } from '../components/icons';
+import { CheckIcon, LockIcon, ShuffleIcon, StepsIcon } from '../components/icons';
 import { useChangePhrase, usePhraseOfTheDay } from '../hooks/usePhraseOfTheDay';
 import { LANGUAGES } from '../lib/languages';
 import { tts } from '../services/tts';
@@ -11,6 +12,7 @@ import { useAppStore } from '../store/useAppStore';
 export function TodayScreen() {
   const phrase = usePhraseOfTheDay();
   const changePhrase = useChangePhrase();
+  const startPractice = useAppStore((state) => state.startPractice);
   const isMastered = useAppStore((state) =>
     phrase ? Boolean(state.mastered[phrase.id]) : false,
   );
@@ -47,6 +49,15 @@ export function TodayScreen() {
         <ShuffleIcon className="h-4 w-4" />
         Change phrase
       </button>
+
+      <Button
+        variant="secondary"
+        onClick={() => startPractice(phrase.id, 'today')}
+        className="mt-3 w-full"
+      >
+        <StepsIcon />
+        Memorize step by step
+      </Button>
 
       <div className="mt-4">
         <TtsButton text={phrase.text} lang={meta.ttsLang} />

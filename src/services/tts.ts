@@ -8,7 +8,9 @@
  *    a Gemini request fails (offline, quota exhausted, bad key).
  */
 
+import { base64ToBytes, pcm16ToWavBlob } from '../lib/audio';
 import { useAppStore } from '../store/useAppStore';
+import { GEMINI_BASE_URL } from './gemini';
 
 export interface TtsOptions {
   /** BCP-47 tag, e.g. 'de-DE' or 'es-ES'. */
@@ -121,46 +123,13 @@ function createWebSpeechTts(): TtsService {
 
 // ── Gemini TTS ─────────────────────────────────────────────────────────────
 
-const GEMINI_TTS_MODEL = 'gemini-2.5-flash-preview-tts';
 const GEMINI_TTS_VOICE = 'Kore';
-const GEMINI_TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TTS_MODEL}:generateContent`;
 /** Replaying a phrase must not burn free-tier quota. */
 const CACHE_LIMIT = 24;
 
 const LANGUAGE_NAMES: Record<string, string> = { de: 'German', es: 'Spanish' };
 
-/** Gemini returns raw 16-bit mono PCM with no container; browsers need a WAV
-    header in front of it before an <audio> element will play it. */
-function pcm16ToWavBlob(pcm: Uint8Array, sampleRate: number): Blob {
-  const header = new ArrayBuffer(44);
-  const view = new DataView(header);
-  const writeTag = (offset: number, tag: string) => {
-    for (let i = 0; i < tag.length; i++) view.setUint8(offset + i, tag.charCodeAt(i));
-  };
-  writeTag(0, 'RIFF');
-  view.setUint32(4, 36 + pcm.length, true);
-  writeTag(8, 'WAVE');
-  writeTag(12, 'fmt ');
-  view.setUint32(16, 16, true); // fmt chunk size
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, 1, true); // mono
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true); // byte rate
-  view.setUint16(32, 2, true); // block align
-  view.setUint16(34, 16, true); // bits per sample
-  writeTag(36, 'data');
-  view.setUint32(40, pcm.length, true);
-  return new Blob([header, pcm.buffer as ArrayBuffer], { type: 'audio/wav' });
-}
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-function createGeminiTts(getApiKey: () => string): TtsService {
+function createGeminiTts(getApiKey: () => string, getModel: () => string): TtsService {
   const cache = new Map<string, Blob>();
   let abortController: AbortController | null = null;
   let audio: HTMLAudioElement | null = null;
@@ -186,7 +155,7 @@ function createGeminiTts(getApiKey: () => string): TtsService {
       ? `Say the following short ${languageName} phrase slowly and clearly: ${text}`
       : `Say the following short phrase slowly and clearly: ${text}`;
 
-    const response = await fetch(GEMINI_TTS_URL, {
+    const response = await fetch(`${GEMINI_BASE_URL}/models/${getModel()}:generateContent`, {
       method: 'POST',
       signal,
       headers: {
@@ -218,7 +187,7 @@ function createGeminiTts(getApiKey: () => string): TtsService {
   return {
     async speak(text, { lang }) {
       stopPlayback();
-      const cacheKey = `${GEMINI_TTS_VOICE}:${lang}:${text}`;
+      const cacheKey = `${getModel()}:${GEMINI_TTS_VOICE}:${lang}:${text}`;
       let blob = cache.get(cacheKey);
       if (!blob) {
         abortController = new AbortController();
@@ -263,8 +232,9 @@ function createGeminiTts(getApiKey: () => string): TtsService {
 // ── Dispatcher ─────────────────────────────────────────────────────────────
 
 const getGeminiKey = () => useAppStore.getState().geminiApiKey;
+const getGeminiModel = () => useAppStore.getState().geminiTtsModel;
 const webSpeechTts = createWebSpeechTts();
-const geminiTts = createGeminiTts(getGeminiKey);
+const geminiTts = createGeminiTts(getGeminiKey, getGeminiModel);
 
 /** Gemini AI voice when the user has saved an API key in Settings; browser
     speech synthesis otherwise, and as the fallback when Gemini errors. */

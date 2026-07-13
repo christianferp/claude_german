@@ -1,0 +1,33 @@
+name: Supabase keep-alive
+
+# Free Supabase projects pause after 7 days without activity; one tiny
+# authenticated request per week keeps the project awake. Reads the public
+# client credentials straight from src/config.ts (they are public by design —
+# row-level security is what protects the data).
+
+on:
+  schedule:
+    - cron: '0 6 * * 1,4' # Mondays and Thursdays, 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ping Supabase
+        run: |
+          URL=$(sed -n "s/^export const SUPABASE_URL = '\(.*\)';$/\1/p" src/config.ts)
+          KEY=$(sed -n "s/^export const SUPABASE_ANON_KEY = '\(.*\)';$/\1/p" src/config.ts)
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "Supabase not configured yet — nothing to ping."
+            exit 0
+          fi
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/rest/v1/mastered?select=phrase_id&limit=1" \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
+          echo "Supabase responded with HTTP $STATUS"
+          # 200 (or 401/406 from RLS without a session) all prove the project is awake.
+          case "$STATUS" in
+            2*|401|406) exit 0 ;;
+            *) exit 1 ;;
+          esac
