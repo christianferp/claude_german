@@ -4,10 +4,12 @@ import { RecordPanel } from '../components/RecordPanel';
 import { TtsButton } from '../components/TtsButton';
 import { CheckIcon, CloseIcon } from '../components/icons';
 import { MaskedPhrase } from '../components/practice/MaskedPhrase';
+import { QuickCheck } from '../components/practice/QuickCheck';
 import { getPhraseById } from '../data/phrases';
 import { LANGUAGES } from '../lib/languages';
 import { pickHiddenWordIndices } from '../lib/mask';
 import type { Phrase } from '../lib/types';
+import { tts } from '../services/tts';
 import { useAppStore } from '../store/useAppStore';
 
 const STAGES = ['chunks', 'full', 'cloze', 'letters', 'recall'] as const;
@@ -96,6 +98,18 @@ function PracticeWizard({ phrase, onExit }: { phrase: Phrase; onExit: () => void
   const [state, dispatch] = useReducer(reducer, INITIAL);
   const meta = LANGUAGES[phrase.language];
   const chunks = phrase.breakdown;
+
+  // Warm the audio the user is about to play: the current chunk while in
+  // stage 1, plus the full phrase (used by every later stage).
+  useEffect(() => {
+    tts.prefetch(phrase.text, { lang: meta.ttsLang });
+  }, [phrase.text, meta.ttsLang]);
+  useEffect(() => {
+    if (STAGES[state.stage] === 'chunks') {
+      tts.prefetch(chunks[state.chunkIndex].text, { lang: meta.ttsLang });
+    }
+  }, [state.stage, state.chunkIndex, chunks, meta.ttsLang]);
+
   const hiddenIndices = useMemo(
     () => pickHiddenWordIndices(phrase.text, phrase.id),
     [phrase.text, phrase.id],
@@ -172,6 +186,7 @@ function PracticeWizard({ phrase, onExit }: { phrase: Phrase; onExit: () => void
                   <div className="mt-4">
                     <TtsButton text={chunks[state.chunkIndex].text} lang={meta.ttsLang} size="sm" />
                   </div>
+                  <QuickCheck text={chunks[state.chunkIndex].text} language={phrase.language} />
                 </div>
                 <p className="mt-4 px-1 text-sm text-slate-400">
                   Read each piece out loud, then move on.
@@ -187,6 +202,7 @@ function PracticeWizard({ phrase, onExit }: { phrase: Phrase; onExit: () => void
                   <div className="mt-4">
                     <TtsButton text={phrase.text} lang={meta.ttsLang} size="sm" />
                   </div>
+                  <QuickCheck text={phrase.text} language={phrase.language} />
                 </div>
                 <p className="mt-4 px-1 text-sm text-slate-400">
                   Read the whole phrase aloud two or three times.
@@ -214,6 +230,7 @@ function PracticeWizard({ phrase, onExit }: { phrase: Phrase; onExit: () => void
                       Reveal all
                     </button>
                   </div>
+                  <QuickCheck text={phrase.text} language={phrase.language} />
                 </div>
                 <p className="mt-4 px-1 text-sm text-slate-400">
                   Say the whole phrase — tap a blank if you're stuck.
@@ -232,6 +249,7 @@ function PracticeWizard({ phrase, onExit }: { phrase: Phrase; onExit: () => void
                     onReveal={(index) => dispatch({ type: 'REVEAL', mode: 'letters', index })}
                   />
                   <p className="mt-2 text-base text-slate-500">{phrase.translation}</p>
+                  <QuickCheck text={phrase.text} language={phrase.language} />
                 </div>
                 <p className="mt-4 px-1 text-sm text-slate-400">
                   Only first letters now. Say it out loud — tap a word if you need it.

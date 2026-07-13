@@ -10,12 +10,25 @@
 import { blobToBase64, transcodeToWav16kMono } from '../lib/audio';
 import { LANGUAGES } from '../lib/languages';
 import { levenshtein, normalizeWord, stripDiacritics, wordsOf } from '../lib/textTokens';
-import type { Phrase } from '../lib/types';
+import type { Language } from '../lib/types';
 import { useAppStore } from '../store/useAppStore';
 import { GEMINI_BASE_URL } from './gemini';
 
-const GEMINI_STT_MODEL = 'gemini-2.5-flash';
+/**
+ * Model names churn as Google retires generations; try the stable alias
+ * first and fall back through known names on 404. The first one that
+ * answers is remembered for the rest of the session.
+ */
+const STT_MODEL_CANDIDATES = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'];
+let sttModelIndex = 0;
+
 const NO_SPEECH_MARKER = '[no speech]';
+
+/** What to check against — a whole phrase or a single practice chunk. */
+export interface CheckTarget {
+  text: string;
+  language: Language;
+}
 
 export type WordVerdict = 'match' | 'close' | 'missed';
 
@@ -114,8 +127,8 @@ export function comparePronunciation(expectedText: string, transcript: string): 
   };
 }
 
-async function transcribe(blob: Blob, phrase: Phrase, signal?: AbortSignal): Promise<string> {
-  const languageName = LANGUAGES[phrase.language].name;
+async function transcribe(blob: Blob, target: CheckTarget, signal?: AbortSignal): Promise<string> {
+  const languageName = LANGUAGES[target.language].name;
   const prompt =
     `The audio contains a language learner speaking ${languageName}. ` +
     `Transcribe exactly what you hear, verbatim, in ${languageName} — including mistakes, ` +
@@ -123,38 +136,55 @@ async function transcribe(blob: Blob, phrase: Phrase, signal?: AbortSignal): Pro
     `Do not correct, complete or translate anything. Output only the transcription with no ` +
     `quotes or commentary. If there is no discernible speech, output exactly: ${NO_SPEECH_MARKER}`;
 
-  let response: Response;
-  try {
-    response = await fetch(`${GEMINI_BASE_URL}/models/${GEMINI_STT_MODEL}:generateContent`, {
-      method: 'POST',
-      signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': useAppStore.getState().geminiApiKey,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: 'audio/wav', data: await blobToBase64(blob) } },
-            ],
-          },
-        ],
-        generationConfig: { temperature: 0 },
-      }),
-    });
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') throw err;
-    throw new PronunciationCheckError('network', 'Could not reach Gemini.');
+  const audioB64 = await blobToBase64(blob);
+  let response: Response | null = null;
+  // Walk the model candidates: a 404 means "this model name no longer
+  // exists", so quietly move to the next one.
+  while (sttModelIndex < STT_MODEL_CANDIDATES.length) {
+    const model = STT_MODEL_CANDIDATES[sttModelIndex];
+    try {
+      response = await fetch(`${GEMINI_BASE_URL}/models/${model}:generateContent`, {
+        method: 'POST',
+        signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': useAppStore.getState().geminiApiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType: 'audio/wav', data: audioB64 } },
+              ],
+            },
+          ],
+          generationConfig: { temperature: 0 },
+        }),
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') throw err;
+      throw new PronunciationCheckError('network', 'Could not reach Gemini.');
+    }
+    if (response.status !== 404) break;
+    sttModelIndex++;
+    response = null;
+  }
+  if (!response) {
+    throw new PronunciationCheckError('other', 'No available Gemini transcription model.');
   }
 
   if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    const detail = /"message"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? '';
     if (response.status === 429) throw new PronunciationCheckError('quota', 'Quota exhausted.');
-    if ([400, 401, 403].includes(response.status)) {
+    if ([401, 403].includes(response.status) || (response.status === 400 && /api key/i.test(detail))) {
       throw new PronunciationCheckError('auth', `Key rejected (HTTP ${response.status}).`);
     }
-    throw new PronunciationCheckError('other', `Transcription failed (HTTP ${response.status}).`);
+    throw new PronunciationCheckError(
+      'other',
+      `HTTP ${response.status}${detail ? ` — ${detail}` : ''}`,
+    );
   }
 
   const payload = (await response.json()) as {
@@ -172,7 +202,7 @@ async function transcribe(blob: Blob, phrase: Phrase, signal?: AbortSignal): Pro
 
 export async function checkPronunciation(
   blob: Blob,
-  phrase: Phrase,
+  target: CheckTarget,
   signal?: AbortSignal,
 ): Promise<PronunciationResult> {
   let wav: Blob;
@@ -181,6 +211,6 @@ export async function checkPronunciation(
   } catch {
     throw new PronunciationCheckError('decode', 'Could not decode the recording.');
   }
-  const transcript = await transcribe(wav, phrase, signal);
-  return comparePronunciation(phrase.text, transcript);
+  const transcript = await transcribe(wav, target, signal);
+  return comparePronunciation(target.text, transcript);
 }

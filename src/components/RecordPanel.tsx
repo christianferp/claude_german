@@ -14,7 +14,7 @@ import { AudioPlayButton } from './AudioPlayButton';
 import { Button } from './Button';
 import { LevelMeter } from './LevelMeter';
 import { PronunciationResultCard } from './PronunciationResult';
-import { CheckIcon, MicIcon, SpeakerIcon, StopIcon } from './icons';
+import { CheckIcon, MicIcon, StopIcon } from './icons';
 
 const CHECK_ERROR_MESSAGES: Record<CheckErrorKind, string> = {
   quota: "Gemini's free quota is used up for now — try again later.",
@@ -85,11 +85,22 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
       if (controller.signal.aborted) return;
       const message =
         err instanceof PronunciationCheckError
-          ? CHECK_ERROR_MESSAGES[err.kind]
+          ? err.kind === 'other'
+            ? `${CHECK_ERROR_MESSAGES.other} (${err.message})`
+            : CHECK_ERROR_MESSAGES[err.kind]
           : CHECK_ERROR_MESSAGES.other;
       setCheck({ status: 'error', message });
     }
   };
+
+  // Check automatically as soon as a take is ready — no extra tap needed.
+  const { status: recorderStatus, blob: recorderBlob } = recorder;
+  useEffect(() => {
+    if (recorderStatus === 'reviewing' && recorderBlob && hasGeminiKey) {
+      void handleCheck();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per new take
+  }, [recorderStatus, recorderBlob, hasGeminiKey]);
 
   const handleMarkMastered = async () => {
     if (!recorder.blob) return;
@@ -150,19 +161,24 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
       {recorder.status === 'reviewing' && (
         <div className="mt-3 space-y-3">
           <AudioPlayButton src={recorder.blobUrl} label="Play your take" />
-          {hasGeminiKey && check.status !== 'done' && (
-            <Button
-              variant="secondary"
-              onClick={() => void handleCheck()}
-              disabled={check.status === 'loading'}
-              className="w-full"
-            >
-              <SpeakerIcon />
-              {check.status === 'loading' ? 'Checking…' : 'Check pronunciation'}
-            </Button>
+          {check.status === 'loading' && (
+            <p className="flex items-center gap-2 px-1 text-sm font-semibold text-slate-400">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-sage-500" />
+              Checking your pronunciation…
+            </p>
           )}
-          {check.status === 'done' && <PronunciationResultCard phrase={phrase} result={check.result} />}
-          {check.status === 'error' && <p className="text-sm text-blush-600">{check.message}</p>}
+          {check.status === 'done' && <PronunciationResultCard text={phrase.text} result={check.result} />}
+          {check.status === 'error' && (
+            <div>
+              <p className="text-sm text-blush-600">{check.message}</p>
+              <button
+                onClick={() => void handleCheck()}
+                className="mt-1 text-sm font-semibold text-sage-600 active:text-sage-700"
+              >
+                Try the check again
+              </button>
+            </div>
+          )}
           <div className="flex gap-2">
             <Button variant="secondary" onClick={recorder.reset} className="flex-1">
               Try again
