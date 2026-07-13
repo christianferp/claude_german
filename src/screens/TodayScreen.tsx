@@ -2,14 +2,15 @@ import { Header } from '../components/Header';
 import { PhraseCard } from '../components/PhraseCard';
 import { RecordPanel } from '../components/RecordPanel';
 import { TtsButton } from '../components/TtsButton';
-import { CheckIcon, LockIcon } from '../components/icons';
-import { usePhraseOfTheDay } from '../hooks/usePhraseOfTheDay';
+import { CheckIcon, LockIcon, ShuffleIcon } from '../components/icons';
+import { usePhraseOfTheDay, useShufflePhrase } from '../hooks/usePhraseOfTheDay';
 import { LANGUAGES } from '../lib/languages';
 import { tts } from '../services/tts';
 import { useAppStore } from '../store/useAppStore';
 
 export function TodayScreen() {
   const phrase = usePhraseOfTheDay();
+  const shufflePhrase = useShufflePhrase(phrase);
   const isMastered = useAppStore((state) =>
     phrase ? Boolean(state.mastered[phrase.id]) : false,
   );
@@ -39,7 +40,15 @@ export function TodayScreen() {
 
       <PhraseCard phrase={phrase} />
 
-      <div className="mt-4">
+      <button
+        onClick={shufflePhrase}
+        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-2xl py-2 text-sm font-semibold text-slate-400 transition-colors active:text-sage-600"
+      >
+        <ShuffleIcon className="h-4 w-4" />
+        Don't like it? Give me another
+      </button>
+
+      <div className="mt-2">
         <TtsButton text={phrase.text} lang={meta.ttsLang} />
         {!tts.isAvailable(meta.ttsLang) && (
           <p className="mt-2 px-1 text-xs text-slate-400">
