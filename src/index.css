@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Soothing palette: soft sage greens, off-white creams, slate text,
+   and a warm blush for recording states (never a harsh red). */
+@theme {
+  --color-sage-50: #f4f7f2;
+  --color-sage-100: #e4ece0;
+  --color-sage-200: #c9d9c2;
+  --color-sage-300: #a8c39c;
+  --color-sage-400: #8aab7f;
+  --color-sage-500: #6d9460;
+  --color-sage-600: #57794c;
+  --color-sage-700: #465f3e;
+
+  --color-cream-50: #fbfaf7;
+  --color-cream-100: #f4f2ec;
+  --color-cream-200: #e9e5da;
+
+  --color-blush-100: #f8e7e3;
+  --color-blush-400: #e3a396;
+  --color-blush-500: #d98a7e;
+  --color-blush-600: #c9705f;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-cream-50 text-slate-800 antialiased;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+}
