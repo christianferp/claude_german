@@ -13,6 +13,12 @@ interface AppState {
   mastered: Record<string, MasteredEntry>;
   /** Mock "Add to Lockscreen" preference from the widget concept screen. */
   widgetEnabled: boolean;
+  /**
+   * Shuffled phrase picks, keyed by `${language}:${level}:${dateISO}`.
+   * When the user doesn't like today's phrase they can shuffle; the pick is
+   * stored so it survives refreshes but naturally expires with the day.
+   */
+  phraseOverrides: Record<string, string>;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
@@ -24,6 +30,7 @@ interface AppState {
   setView: (view: AppView) => void;
   setSettingsOpen: (open: boolean) => void;
   markMastered: (phraseId: string, recordingMime: string) => void;
+  setPhraseOverride: (key: string, phraseId: string) => void;
   setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
@@ -35,6 +42,7 @@ export const useAppStore = create<AppState>()(
       levels: {},
       mastered: {},
       widgetEnabled: false,
+      phraseOverrides: {},
       view: 'today',
       settingsOpen: false,
 
@@ -50,6 +58,15 @@ export const useAppStore = create<AppState>()(
             [phraseId]: { phraseId, masteredAt: Date.now(), recordingMime },
           },
         })),
+      setPhraseOverride: (key, phraseId) =>
+        set((state) => {
+          // Drop stale entries from previous days so the map never grows.
+          const dateISO = key.slice(key.lastIndexOf(':') + 1);
+          const kept = Object.fromEntries(
+            Object.entries(state.phraseOverrides).filter(([k]) => k.endsWith(`:${dateISO}`)),
+          );
+          return { phraseOverrides: { ...kept, [key]: phraseId } };
+        }),
       setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
@@ -66,6 +83,7 @@ export const useAppStore = create<AppState>()(
         levels: state.levels,
         mastered: state.mastered,
         widgetEnabled: state.widgetEnabled,
+        phraseOverrides: state.phraseOverrides,
       }),
     },
   ),
