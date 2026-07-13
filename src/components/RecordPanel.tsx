@@ -1,12 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRecorder } from '../hooks/useRecorder';
 import type { Phrase } from '../lib/types';
 import { audioStorage } from '../services/audioStorage';
+import { pushMastered } from '../services/backend';
+import {
+  checkPronunciation,
+  PronunciationCheckError,
+  type CheckErrorKind,
+  type PronunciationResult,
+} from '../services/pronunciationCheck';
 import { useAppStore } from '../store/useAppStore';
 import { AudioPlayButton } from './AudioPlayButton';
 import { Button } from './Button';
 import { LevelMeter } from './LevelMeter';
-import { CheckIcon, MicIcon, StopIcon } from './icons';
+import { PronunciationResultCard } from './PronunciationResult';
+import { CheckIcon, MicIcon, SpeakerIcon, StopIcon } from './icons';
+
+const CHECK_ERROR_MESSAGES: Record<CheckErrorKind, string> = {
+  quota: "Gemini's free quota is used up for now — try again later.",
+  auth: 'Your Gemini API key was rejected — check it in Settings.',
+  'no-speech': "We couldn't hear any speech — try again closer to the microphone.",
+  network: 'You appear to be offline.',
+  decode: "The check didn't work this time — you can still save your take.",
+  other: "The check didn't work this time — you can still save your take.",
+};
+
+type CheckState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'done'; result: PronunciationResult }
+  | { status: 'error'; message: string };
 
 function formatMs(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -31,12 +54,42 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
   const alreadyMastered = useAppStore((state) => Boolean(state.mastered[phrase.id]));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const hasGeminiKey = useAppStore((state) => Boolean(state.geminiApiKey));
+  const [check, setCheck] = useState<CheckState>({ status: 'idle' });
+  const checkAbortRef = useRef<AbortController | null>(null);
 
   const { reset } = recorder;
   // A different phrase (new day, other library item) discards any take in flight.
   useEffect(() => {
     reset();
+    checkAbortRef.current?.abort();
+    setCheck({ status: 'idle' });
+    return () => checkAbortRef.current?.abort();
   }, [phrase.id, reset]);
+
+  // A new take invalidates the previous check result.
+  useEffect(() => {
+    if (recorder.status !== 'reviewing') setCheck({ status: 'idle' });
+  }, [recorder.status]);
+
+  const handleCheck = async () => {
+    if (!recorder.blob) return;
+    checkAbortRef.current?.abort();
+    const controller = new AbortController();
+    checkAbortRef.current = controller;
+    setCheck({ status: 'loading' });
+    try {
+      const result = await checkPronunciation(recorder.blob, phrase, controller.signal);
+      if (!controller.signal.aborted) setCheck({ status: 'done', result });
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      const message =
+        err instanceof PronunciationCheckError
+          ? CHECK_ERROR_MESSAGES[err.kind]
+          : CHECK_ERROR_MESSAGES.other;
+      setCheck({ status: 'error', message });
+    }
+  };
 
   const handleMarkMastered = async () => {
     if (!recorder.blob) return;
@@ -45,6 +98,11 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
     try {
       await audioStorage.saveRecording(phrase.id, recorder.blob);
       markMastered(phrase.id, recorder.blob.type);
+      // Best-effort cloud sync — local save above is the source of truth.
+      void pushMastered(
+        { phraseId: phrase.id, masteredAt: Date.now(), recordingMime: recorder.blob.type },
+        recorder.blob,
+      ).catch(() => {});
       recorder.reset();
       onMastered?.();
     } catch {
@@ -92,6 +150,19 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
       {recorder.status === 'reviewing' && (
         <div className="mt-3 space-y-3">
           <AudioPlayButton src={recorder.blobUrl} label="Play your take" />
+          {hasGeminiKey && check.status !== 'done' && (
+            <Button
+              variant="secondary"
+              onClick={() => void handleCheck()}
+              disabled={check.status === 'loading'}
+              className="w-full"
+            >
+              <SpeakerIcon />
+              {check.status === 'loading' ? 'Checking…' : 'Check pronunciation'}
+            </Button>
+          )}
+          {check.status === 'done' && <PronunciationResultCard phrase={phrase} result={check.result} />}
+          {check.status === 'error' && <p className="text-sm text-blush-600">{check.message}</p>}
           <div className="flex gap-2">
             <Button variant="secondary" onClick={recorder.reset} className="flex-1">
               Try again

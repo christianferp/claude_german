@@ -31,7 +31,7 @@ export interface MasteredEntry {
   recordingMime: string;
 }
 
-export type AppView = 'today' | 'library' | 'widget';
+export type AppView = 'today' | 'library' | 'widget' | 'practice';
 
 export type RecorderStatus =
   | 'idle'
