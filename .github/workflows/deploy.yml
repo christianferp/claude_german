@@ -2,8 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    # Deploys from the MVP branch pre-merge; drop it once merged to main.
-    branches: [main, feature/daily-phrase-mvp]
+    # The github-pages environment only allows deployments from main,
+    # so feature-branch triggers are rejected before the build starts.
+    branches: [main]
   workflow_dispatch:
 
 permissions:

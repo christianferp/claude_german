@@ -2,14 +2,15 @@ import { Header } from '../components/Header';
 import { PhraseCard } from '../components/PhraseCard';
 import { RecordPanel } from '../components/RecordPanel';
 import { TtsButton } from '../components/TtsButton';
-import { CheckIcon, LockIcon } from '../components/icons';
-import { usePhraseOfTheDay } from '../hooks/usePhraseOfTheDay';
+import { CheckIcon, LockIcon, ShuffleIcon } from '../components/icons';
+import { useChangePhrase, usePhraseOfTheDay } from '../hooks/usePhraseOfTheDay';
 import { LANGUAGES } from '../lib/languages';
 import { tts } from '../services/tts';
 import { useAppStore } from '../store/useAppStore';
 
 export function TodayScreen() {
   const phrase = usePhraseOfTheDay();
+  const changePhrase = useChangePhrase();
   const isMastered = useAppStore((state) =>
     phrase ? Boolean(state.mastered[phrase.id]) : false,
   );
@@ -38,6 +39,14 @@ export function TodayScreen() {
       </div>
 
       <PhraseCard phrase={phrase} />
+
+      <button
+        onClick={changePhrase}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-sage-200 bg-white py-2.5 text-sm font-semibold text-sage-700 transition-all duration-150 active:scale-[0.98] active:bg-sage-50"
+      >
+        <ShuffleIcon className="h-4 w-4" />
+        Change phrase
+      </button>
 
       <div className="mt-4">
         <TtsButton text={phrase.text} lang={meta.ttsLang} />

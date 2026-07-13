@@ -95,11 +95,24 @@ export function useRecorder(): UseRecorder {
     setStatus('requesting');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Voice-optimised capture: clean up room echo/noise and let the
+      // browser level the gain so quiet speakers are still audible.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
+      });
       streamRef.current = stream;
 
       const mime = pickMimeType();
-      const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      // 128 kbps mono is transparent for speech — browser defaults can be
+      // much lower and sound muffled.
+      const options: MediaRecorderOptions = { audioBitsPerSecond: 128_000 };
+      if (mime) options.mimeType = mime;
+      const recorder = new MediaRecorder(stream, options);
       chunksRef.current = [];
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunksRef.current.push(event.data);

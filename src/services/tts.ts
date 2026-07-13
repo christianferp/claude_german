@@ -42,12 +42,41 @@ function createWebSpeechTts(): TtsService {
     window.speechSynthesis.addEventListener('voiceschanged', loadVoices); // …filled async
   }
 
+  // Engines expose several voices per language and list the worst ones
+  // first (e.g. Apple's "Compact"/"Eloquence", eSpeak on Linux). Rank all
+  // matches and pick the best instead of the first.
+  const HIGH_QUALITY = /natural|neural|premium|enhanced|google|siri|online/i;
+  const LOW_QUALITY = /compact|eloquence|espeak|novelty|whisper|zarvox|albert|jester|junior|kathy|ralph|trinoids|bahh|bells|boing|bubbles|cellos|organ|superstar|wobble/i;
+
   const pickVoice = (lang: string): SpeechSynthesisVoice | undefined => {
     const norm = (tag: string) => tag.replace('_', '-').toLowerCase();
-    return (
-      voices.find((v) => norm(v.lang) === norm(lang)) ??
-      voices.find((v) => norm(v.lang).startsWith(lang.slice(0, 2).toLowerCase()))
-    );
+    const target = norm(lang);
+    const prefix = target.slice(0, 2);
+
+    const score = (v: SpeechSynthesisVoice): number => {
+      const vLang = norm(v.lang);
+      let s = 0;
+      if (vLang === target) s += 8;
+      else if (vLang.startsWith(prefix)) s += 4;
+      else return -1; // wrong language entirely
+      if (HIGH_QUALITY.test(v.name)) s += 4;
+      if (LOW_QUALITY.test(v.name)) s -= 6;
+      // Cloud voices (Chrome's Google voices) beat most bundled local ones.
+      if (!v.localService) s += 2;
+      if (v.default) s += 1;
+      return s;
+    };
+
+    let best: SpeechSynthesisVoice | undefined;
+    let bestScore = 0;
+    for (const v of voices) {
+      const s = score(v);
+      if (s > bestScore) {
+        best = v;
+        bestScore = s;
+      }
+    }
+    return best;
   };
 
   return {
@@ -61,6 +90,8 @@ function createWebSpeechTts(): TtsService {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
         utterance.rate = rate;
+        utterance.pitch = 1;
+        utterance.volume = 1;
         const voice = pickVoice(lang);
         if (voice) utterance.voice = voice;
         utterance.onend = () => {
