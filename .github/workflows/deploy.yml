@@ -2,8 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    # Deploys from the MVP branch pre-merge; drop it once merged to main.
-    branches: [main, feature/daily-phrase-mvp]
+    # Also deploys from the active feature branch pre-merge so it can be
+    # tested on a phone; drop it once merged to main.
+    branches: [main, claude/phrase-day-audio-quality-vznqqg]
   workflow_dispatch:
 
 permissions:
