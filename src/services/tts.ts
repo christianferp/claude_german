@@ -25,6 +25,8 @@ export interface TtsService {
   stop(): void;
   /** Whether the engine can (probably) produce audio for this language. */
   isAvailable(lang: string): boolean;
+  /** Warm the audio for a text so a later speak() starts instantly. */
+  prefetch(text: string, opts: TtsOptions): void;
 }
 
 function createWebSpeechTts(): TtsService {
@@ -112,6 +114,9 @@ function createWebSpeechTts(): TtsService {
       if (supported) window.speechSynthesis.cancel();
       active.utterance = null;
     },
+    prefetch() {
+      /* speech synthesis has nothing to warm up */
+    },
     isAvailable(lang) {
       if (!supported) return false;
       // Voices may not have loaded yet — stay optimistic until we know.
@@ -129,15 +134,22 @@ const CACHE_LIMIT = 24;
 
 const LANGUAGE_NAMES: Record<string, string> = { de: 'German', es: 'Spanish' };
 
-function createGeminiTts(getApiKey: () => string, getModel: () => string): TtsService {
+interface GeminiTts extends TtsService {
+  /** Synthesize into the cache without playing, so Listen is instant. */
+  prefetch(text: string, opts: TtsOptions): Promise<void>;
+}
+
+function createGeminiTts(getApiKey: () => string, getModel: () => string): GeminiTts {
   const cache = new Map<string, Blob>();
-  let abortController: AbortController | null = null;
+  /** In-flight requests, so prefetch + speak of the same text share one call. */
+  const pending = new Map<string, Promise<Blob>>();
+  // Bumped by stop(): a speak() that was still synthesizing simply doesn't play.
+  let playToken = 0;
   let audio: HTMLAudioElement | null = null;
   let objectUrl: string | null = null;
 
   const stopPlayback = () => {
-    abortController?.abort();
-    abortController = null;
+    playToken++;
     if (audio) {
       audio.pause();
       audio.src = '';
@@ -149,7 +161,7 @@ function createGeminiTts(getApiKey: () => string, getModel: () => string): TtsSe
     }
   };
 
-  const synthesize = async (text: string, lang: string, signal: AbortSignal): Promise<Blob> => {
+  const synthesize = async (text: string, lang: string): Promise<Blob> => {
     const languageName = LANGUAGE_NAMES[lang.slice(0, 2).toLowerCase()];
     const prompt = languageName
       ? `Say the following short ${languageName} phrase slowly and clearly: ${text}`
@@ -157,7 +169,6 @@ function createGeminiTts(getApiKey: () => string, getModel: () => string): TtsSe
 
     const response = await fetch(`${GEMINI_BASE_URL}/models/${getModel()}:generateContent`, {
       method: 'POST',
-      signal,
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': getApiKey(),
@@ -184,28 +195,42 @@ function createGeminiTts(getApiKey: () => string, getModel: () => string): TtsSe
     return pcm16ToWavBlob(base64ToBytes(inline.data), sampleRate);
   };
 
+  /** Cached blob, the in-flight request for it, or a fresh request. */
+  const getBlob = (text: string, lang: string): Promise<Blob> => {
+    const cacheKey = `${getModel()}:${GEMINI_TTS_VOICE}:${lang}:${text}`;
+    const hit = cache.get(cacheKey);
+    if (hit) return Promise.resolve(hit);
+    let request = pending.get(cacheKey);
+    if (!request) {
+      request = synthesize(text, lang)
+        .then((blob) => {
+          if (cache.size >= CACHE_LIMIT) {
+            const oldest = cache.keys().next().value;
+            if (oldest !== undefined) cache.delete(oldest);
+          }
+          cache.set(cacheKey, blob);
+          pending.delete(cacheKey);
+          return blob;
+        })
+        .catch((err: unknown) => {
+          pending.delete(cacheKey);
+          throw err;
+        });
+      pending.set(cacheKey, request);
+    }
+    return request;
+  };
+
   return {
+    async prefetch(text, { lang }) {
+      await getBlob(text, lang);
+    },
     async speak(text, { lang }) {
       stopPlayback();
-      const cacheKey = `${getModel()}:${GEMINI_TTS_VOICE}:${lang}:${text}`;
-      let blob = cache.get(cacheKey);
-      if (!blob) {
-        abortController = new AbortController();
-        try {
-          blob = await synthesize(text, lang, abortController.signal);
-        } catch (err) {
-          // A user-triggered stop() is not a failure.
-          if (err instanceof DOMException && err.name === 'AbortError') return;
-          throw err;
-        } finally {
-          abortController = null;
-        }
-        if (cache.size >= CACHE_LIMIT) {
-          const oldest = cache.keys().next().value;
-          if (oldest !== undefined) cache.delete(oldest);
-        }
-        cache.set(cacheKey, blob);
-      }
+      const token = playToken;
+      const blob = await getBlob(text, lang);
+      // stop() was tapped while we were synthesizing — don't start playing.
+      if (token !== playToken) return;
 
       await new Promise<void>((resolve, reject) => {
         objectUrl = URL.createObjectURL(blob);
@@ -254,5 +279,9 @@ export const tts: TtsService = {
   },
   isAvailable(lang) {
     return getGeminiKey() ? true : webSpeechTts.isAvailable(lang);
+  },
+  prefetch(text, opts) {
+    // Fire-and-forget warm-up; failures will be retried by speak() itself.
+    if (getGeminiKey()) void geminiTts.prefetch(text, opts).catch(() => {});
   },
 };

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Header } from '../components/Header';
 import { PhraseCard } from '../components/PhraseCard';
@@ -17,6 +18,15 @@ export function TodayScreen() {
     phrase ? Boolean(state.mastered[phrase.id]) : false,
   );
   const setView = useAppStore((state) => state.setView);
+
+  // Warm the AI audio as soon as the phrase is on screen (or a key is saved),
+  // so Listen plays instantly instead of waiting on the network.
+  const hasGeminiKey = useAppStore((state) => Boolean(state.geminiApiKey));
+  useEffect(() => {
+    if (phrase && hasGeminiKey) {
+      tts.prefetch(phrase.text, { lang: LANGUAGES[phrase.language].ttsLang });
+    }
+  }, [phrase, hasGeminiKey]);
 
   if (!phrase) return null;
   const meta = LANGUAGES[phrase.language];

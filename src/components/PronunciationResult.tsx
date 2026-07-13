@@ -1,5 +1,4 @@
 import { tokenize } from '../lib/textTokens';
-import type { Phrase } from '../lib/types';
 import type { PronunciationResult as Result, WordVerdict } from '../services/pronunciationCheck';
 
 const VERDICT_CLASSES: Record<WordVerdict, string> = {
@@ -15,13 +14,13 @@ function headline(result: Result): string {
   return `Keep practicing — ${clear} of ${result.words.length} words clear.`;
 }
 
-/** The expected phrase re-rendered with per-word verdict colors. */
-export function PronunciationResultCard({ phrase, result }: { phrase: Phrase; result: Result }) {
+/** The expected text re-rendered with per-word verdict colors. */
+export function PronunciationResultCard({ text, result }: { text: string; result: Result }) {
   return (
     <div className="rounded-2xl bg-cream-100 p-4">
       <p className="text-sm font-bold text-slate-700">{headline(result)}</p>
       <p className="mt-2 text-lg font-bold leading-snug">
-        {tokenize(phrase.text).map((token, i) => {
+        {tokenize(text).map((token, i) => {
           if (!token.isWord) return <span key={i} className="text-slate-800">{token.raw}</span>;
           const verdict = result.words[token.wordIndex]?.verdict ?? 'missed';
           return (
