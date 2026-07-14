@@ -30,6 +30,8 @@ interface AppState {
   geminiTtsModel: string;
   /** Opt-in: also upload recordings to the user's Supabase storage. */
   backupRecordings: boolean;
+  /** Welcome/login screen passed (signed in or "just try it") — never again. */
+  welcomeDone: boolean;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
@@ -54,6 +56,7 @@ interface AppState {
   startPractice: (phraseId: string, returnView: AppView) => void;
   setAuthUser: (user: { id: string; email: string } | null) => void;
   setBackupRecordings: (enabled: boolean) => void;
+  setWelcomeDone: (done: boolean) => void;
   /** Adopt rows pulled from the backend (newer-wins merge done by caller). */
   mergeMastered: (entries: MasteredEntry[]) => void;
   setWidgetEnabled: (enabled: boolean) => void;
@@ -71,6 +74,7 @@ export const useAppStore = create<AppState>()(
       geminiApiKey: '',
       geminiTtsModel: DEFAULT_GEMINI_TTS_MODEL,
       backupRecordings: false,
+      welcomeDone: false,
       view: 'today',
       settingsOpen: false,
       practicePhraseId: null,
@@ -102,6 +106,7 @@ export const useAppStore = create<AppState>()(
         set({ practicePhraseId, practiceReturnView, view: 'practice' }),
       setAuthUser: (authUser) => set({ authUser }),
       setBackupRecordings: (backupRecordings) => set({ backupRecordings }),
+      setWelcomeDone: (welcomeDone) => set({ welcomeDone }),
       mergeMastered: (entries) =>
         set((state) => ({
           mastered: {
@@ -129,6 +134,7 @@ export const useAppStore = create<AppState>()(
         geminiApiKey: state.geminiApiKey,
         geminiTtsModel: state.geminiTtsModel,
         backupRecordings: state.backupRecordings,
+        welcomeDone: state.welcomeDone,
       }),
     },
   ),

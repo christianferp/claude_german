@@ -2,13 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { isBackendConfigured } from '../config';
 import { LANGUAGE_LIST } from '../lib/languages';
 import { LEVELS } from '../lib/types';
-import {
-  clearRemote,
-  signInWithPassword,
-  signOut,
-  signUpWithPassword,
-  syncNow,
-} from '../services/backend';
+import { usePasswordAuth } from '../hooks/usePasswordAuth';
+import { clearRemote, signOut, syncNow } from '../services/backend';
 import { GEMINI_TTS_MODELS, verifyGeminiKey, type KeyVerification } from '../services/gemini';
 import { useAppStore } from '../store/useAppStore';
 import { LockIcon } from './icons';
@@ -42,39 +37,8 @@ export function SettingsSheet() {
   const authUser = useAppStore((state) => state.authUser);
   const backupRecordings = useAppStore((state) => state.backupRecordings);
   const setBackupRecordings = useAppStore((state) => state.setBackupRecordings);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authBusy, setAuthBusy] = useState<'idle' | 'signin' | 'signup'>('idle');
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authInfo, setAuthInfo] = useState<string | null>(null);
+  const auth = usePasswordAuth();
   const [syncing, setSyncing] = useState(false);
-  const authReady = email.includes('@') && password.length >= 6;
-
-  const handleSignIn = async () => {
-    setAuthError(null);
-    setAuthInfo(null);
-    setAuthBusy('signin');
-    const { error } = await signInWithPassword(email.trim(), password);
-    // Success: onAuthStateChange updates the store and kicks off the first sync.
-    if (error) setAuthError(error);
-    else setPassword('');
-    setAuthBusy('idle');
-  };
-
-  const handleSignUp = async () => {
-    setAuthError(null);
-    setAuthInfo(null);
-    setAuthBusy('signup');
-    const { error, needsConfirmation } = await signUpWithPassword(email.trim(), password);
-    if (error) {
-      setAuthError(error);
-    } else if (needsConfirmation) {
-      setAuthInfo('Account created — confirm it via the link in your e-mail, then sign in here.');
-    } else {
-      setPassword('');
-    }
-    setAuthBusy('idle');
-  };
 
   // Verify the key against Google whenever it changes (debounced) so the
   // user gets a confirmation it's OK before leaving Settings.
@@ -243,8 +207,8 @@ export function SettingsSheet() {
               <div className="mt-2 space-y-2">
                 <input
                   type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  value={auth.email}
+                  onChange={(event) => auth.setEmail(event.target.value)}
                   placeholder="you@example.com"
                   autoComplete="email"
                   aria-label="E-mail"
@@ -252,8 +216,8 @@ export function SettingsSheet() {
                 />
                 <input
                   type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  value={auth.password}
+                  onChange={(event) => auth.setPassword(event.target.value)}
                   placeholder="Password (min. 6 characters)"
                   autoComplete="current-password"
                   aria-label="Password"
@@ -261,22 +225,22 @@ export function SettingsSheet() {
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => void handleSignUp()}
-                    disabled={!authReady || authBusy !== 'idle'}
+                    onClick={() => void auth.signUp()}
+                    disabled={!auth.ready || auth.busy !== 'idle'}
                     className="flex-1 rounded-2xl bg-cream-100 px-4 py-3 text-sm font-semibold text-slate-600 active:bg-cream-200 disabled:text-slate-300"
                   >
-                    {authBusy === 'signup' ? 'Creating…' : 'Create account'}
+                    {auth.busy === 'signup' ? 'Creating…' : 'Create account'}
                   </button>
                   <button
-                    onClick={() => void handleSignIn()}
-                    disabled={!authReady || authBusy !== 'idle'}
+                    onClick={() => void auth.signIn()}
+                    disabled={!auth.ready || auth.busy !== 'idle'}
                     className="flex-1 rounded-2xl bg-sage-500 px-4 py-3 text-sm font-semibold text-white active:bg-sage-600 disabled:bg-sage-200"
                   >
-                    {authBusy === 'signin' ? 'Signing in…' : 'Sign in'}
+                    {auth.busy === 'signin' ? 'Signing in…' : 'Sign in'}
                   </button>
                 </div>
-                {authError && <p className="px-1 text-xs text-blush-600">{authError}</p>}
-                {authInfo && <p className="px-1 text-xs font-semibold text-sage-600">{authInfo}</p>}
+                {auth.error && <p className="px-1 text-xs text-blush-600">{auth.error}</p>}
+                {auth.info && <p className="px-1 text-xs font-semibold text-sage-600">{auth.info}</p>}
                 <p className="px-1 text-xs text-slate-400">
                   Optional — sign in to keep your progress across devices.
                 </p>
