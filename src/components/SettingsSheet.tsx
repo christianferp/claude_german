@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { isBackendConfigured } from '../config';
 import { LANGUAGE_LIST } from '../lib/languages';
 import { LEVELS } from '../lib/types';
-import { clearRemote, confirmLoginCode, sendLoginCode, signOut, syncNow } from '../services/backend';
+import {
+  clearRemote,
+  signInWithPassword,
+  signOut,
+  signUpWithPassword,
+  syncNow,
+} from '../services/backend';
 import { GEMINI_TTS_MODELS, verifyGeminiKey, type KeyVerification } from '../services/gemini';
 import { useAppStore } from '../store/useAppStore';
 import { LockIcon } from './icons';
@@ -37,35 +43,37 @@ export function SettingsSheet() {
   const backupRecordings = useAppStore((state) => state.backupRecordings);
   const setBackupRecordings = useAppStore((state) => state.setBackupRecordings);
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [authPhase, setAuthPhase] = useState<'idle' | 'sending' | 'code-sent' | 'verifying'>('idle');
+  const [password, setPassword] = useState('');
+  const [authBusy, setAuthBusy] = useState<'idle' | 'signin' | 'signup'>('idle');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authInfo, setAuthInfo] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const authReady = email.includes('@') && password.length >= 6;
 
-  const handleSendCode = async () => {
+  const handleSignIn = async () => {
     setAuthError(null);
-    setAuthPhase('sending');
-    const { error } = await sendLoginCode(email.trim());
-    if (error) {
-      setAuthError(error);
-      setAuthPhase('idle');
-    } else {
-      setAuthPhase('code-sent');
-    }
+    setAuthInfo(null);
+    setAuthBusy('signin');
+    const { error } = await signInWithPassword(email.trim(), password);
+    // Success: onAuthStateChange updates the store and kicks off the first sync.
+    if (error) setAuthError(error);
+    else setPassword('');
+    setAuthBusy('idle');
   };
 
-  const handleConfirmCode = async () => {
+  const handleSignUp = async () => {
     setAuthError(null);
-    setAuthPhase('verifying');
-    const { error } = await confirmLoginCode(email.trim(), code.trim());
+    setAuthInfo(null);
+    setAuthBusy('signup');
+    const { error, needsConfirmation } = await signUpWithPassword(email.trim(), password);
     if (error) {
       setAuthError(error);
-      setAuthPhase('code-sent');
+    } else if (needsConfirmation) {
+      setAuthInfo('Account created — confirm it via the link in your e-mail, then sign in here.');
     } else {
-      // onAuthStateChange updates the store and kicks off the first sync.
-      setAuthPhase('idle');
-      setCode('');
+      setPassword('');
     }
+    setAuthBusy('idle');
   };
 
   // Verify the key against Google whenever it changes (debounced) so the
@@ -232,57 +240,46 @@ export function SettingsSheet() {
                 </div>
               </div>
             ) : (
-              <div className="mt-2">
-                {authPhase !== 'code-sent' && authPhase !== 'verifying' ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      aria-label="E-mail for sign in"
-                      className="min-w-0 flex-1 rounded-2xl border-2 border-cream-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-300 focus:border-sage-500 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => void handleSendCode()}
-                      disabled={!email.includes('@') || authPhase === 'sending'}
-                      className="shrink-0 rounded-2xl bg-sage-500 px-4 py-3 text-sm font-semibold text-white active:bg-sage-600 disabled:bg-sage-200"
-                    >
-                      {authPhase === 'sending' ? 'Sending…' : 'Send code'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={code}
-                      onChange={(event) => setCode(event.target.value)}
-                      placeholder="6-digit code from your e-mail"
-                      aria-label="Sign-in code"
-                      className="min-w-0 flex-1 rounded-2xl border-2 border-cream-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-300 focus:border-sage-500 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => void handleConfirmCode()}
-                      disabled={code.trim().length < 6 || authPhase === 'verifying'}
-                      className="shrink-0 rounded-2xl bg-sage-500 px-4 py-3 text-sm font-semibold text-white active:bg-sage-600 disabled:bg-sage-200"
-                    >
-                      {authPhase === 'verifying' ? 'Checking…' : 'Sign in'}
-                    </button>
-                  </div>
-                )}
-                {authError && <p className="mt-1.5 px-1 text-xs text-blush-600">{authError}</p>}
-                {authPhase === 'code-sent' || authPhase === 'verifying' ? (
-                  <p className="mt-1.5 px-1 text-xs text-slate-400">
-                    Check your e-mail: enter the 6-digit code here — or simply tap the link in the
-                    e-mail, which opens the app already signed in.
-                  </p>
-                ) : (
-                  <p className="mt-1.5 px-1 text-xs text-slate-400">
-                    Optional — sign in with your e-mail to keep your progress across devices.
-                  </p>
-                )}
+              <div className="mt-2 space-y-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  aria-label="E-mail"
+                  className="w-full rounded-2xl border-2 border-cream-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-300 focus:border-sage-500 focus:outline-none"
+                />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Password (min. 6 characters)"
+                  autoComplete="current-password"
+                  aria-label="Password"
+                  className="w-full rounded-2xl border-2 border-cream-200 bg-white px-4 py-3 text-sm text-slate-700 placeholder:text-slate-300 focus:border-sage-500 focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => void handleSignUp()}
+                    disabled={!authReady || authBusy !== 'idle'}
+                    className="flex-1 rounded-2xl bg-cream-100 px-4 py-3 text-sm font-semibold text-slate-600 active:bg-cream-200 disabled:text-slate-300"
+                  >
+                    {authBusy === 'signup' ? 'Creating…' : 'Create account'}
+                  </button>
+                  <button
+                    onClick={() => void handleSignIn()}
+                    disabled={!authReady || authBusy !== 'idle'}
+                    className="flex-1 rounded-2xl bg-sage-500 px-4 py-3 text-sm font-semibold text-white active:bg-sage-600 disabled:bg-sage-200"
+                  >
+                    {authBusy === 'signin' ? 'Signing in…' : 'Sign in'}
+                  </button>
+                </div>
+                {authError && <p className="px-1 text-xs text-blush-600">{authError}</p>}
+                {authInfo && <p className="px-1 text-xs font-semibold text-sage-600">{authInfo}</p>}
+                <p className="px-1 text-xs text-slate-400">
+                  Optional — sign in to keep your progress across devices.
+                </p>
               </div>
             )}
           </>
