@@ -10,10 +10,10 @@ const shuffleKey = (language: string, level: string) =>
 /**
  * Today's phrase for the active language + level; null during onboarding.
  *
- * Phrases mastered on a previous day are retired from the rotation, so the
- * user always gets something new. A phrase mastered *today* stays on screen
- * (with its badge) rather than being swapped out mid-celebration. If the
- * whole pool is mastered, the full rotation returns rather than going blank.
+ * Mastered phrases are retired from the rotation immediately — the moment a
+ * phrase is marked as mastered (on this device or synced from another), the
+ * next unmastered one takes its place. If the whole pool is mastered, the
+ * full rotation returns rather than going blank.
  */
 export function usePhraseOfTheDay(): Phrase | null {
   const language = useAppStore((state) => state.language);
@@ -26,10 +26,7 @@ export function usePhraseOfTheDay(): Phrase | null {
 
   const today = localDateISO();
   const pool = PHRASES[language][level];
-  const eligible = pool.filter((phrase) => {
-    const entry = mastered[phrase.id];
-    return !entry || localDateISO(new Date(entry.masteredAt)) === today;
-  });
+  const eligible = pool.filter((phrase) => !mastered[phrase.id]);
   const rotation = eligible.length > 0 ? eligible : pool;
 
   const base = dailyPhraseIndex(today, `${language}:${level}`, rotation.length);
