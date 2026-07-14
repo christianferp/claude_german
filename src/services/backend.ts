@@ -61,24 +61,36 @@ export function initBackend(): void {
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 
-export async function sendLoginCode(email: string): Promise<{ error: string | null }> {
-  const supabase = getSupabase();
-  if (!supabase) return { error: 'Backend is not configured.' };
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: appUrl() },
-  });
-  return { error: error ? error.message : null };
-}
-
-export async function confirmLoginCode(
+export async function signInWithPassword(
   email: string,
-  code: string,
+  password: string,
 ): Promise<{ error: string | null }> {
   const supabase = getSupabase();
   if (!supabase) return { error: 'Backend is not configured.' };
-  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
   return { error: error ? error.message : null };
+}
+
+/**
+ * Register a new account. When the project has e-mail confirmation enabled,
+ * no session is returned yet — the user must click the confirmation link
+ * first; `needsConfirmation` tells the UI to say so.
+ */
+export async function signUpWithPassword(
+  email: string,
+  password: string,
+): Promise<{ error: string | null; needsConfirmation: boolean }> {
+  const supabase = getSupabase();
+  if (!supabase) return { error: 'Backend is not configured.', needsConfirmation: false };
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: appUrl() },
+  });
+  return {
+    error: error ? error.message : null,
+    needsConfirmation: !error && !data.session,
+  };
 }
 
 export async function signOut(): Promise<void> {
