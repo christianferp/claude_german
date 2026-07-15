@@ -21,6 +21,13 @@ interface AppState {
    */
   phraseShuffle: { key: string; offset: number } | null;
   /**
+   * The phrase pinned as "today's phrase" (keyed by date+language+level).
+   * Once picked it stays for the whole day — even after being mastered —
+   * so the lockscreen widget shows one stable phrase per day. Only the
+   * "Change phrase" button re-picks (by clearing this pin).
+   */
+  dailyPick: { key: string; phraseId: string } | null;
+  /**
    * User-supplied Google AI Studio key for Gemini TTS. Lives only in this
    * browser's localStorage — the app is a static site with no backend, so
    * shipping a shared key would publish it to the world.
@@ -51,6 +58,9 @@ interface AppState {
   markMastered: (phraseId: string, recordingMime: string) => void;
   /** Advance today's phrase to the next one in the pool for this key. */
   shufflePhrase: (key: string) => void;
+  setDailyPick: (pick: { key: string; phraseId: string }) => void;
+  /** Remove a phrase from the mastered list (and its local recording). */
+  deleteMastered: (phraseId: string) => void;
   setGeminiApiKey: (key: string) => void;
   setGeminiTtsModel: (model: string) => void;
   startPractice: (phraseId: string, returnView: AppView) => void;
@@ -71,6 +81,7 @@ export const useAppStore = create<AppState>()(
       mastered: {},
       widgetEnabled: false,
       phraseShuffle: null,
+      dailyPick: null,
       geminiApiKey: '',
       geminiTtsModel: DEFAULT_GEMINI_TTS_MODEL,
       backupRecordings: false,
@@ -99,7 +110,20 @@ export const useAppStore = create<AppState>()(
             key,
             offset: state.phraseShuffle?.key === key ? state.phraseShuffle.offset + 1 : 1,
           },
+          // Clearing the pin lets the hook re-pick (and re-pin) a new phrase.
+          dailyPick: null,
         })),
+      setDailyPick: (dailyPick) => set({ dailyPick }),
+      deleteMastered: (phraseId) => {
+        void audioStorage.deleteRecording(phraseId).catch(() => {
+          /* metadata removal below still proceeds */
+        });
+        set((state) => {
+          const mastered = { ...state.mastered };
+          delete mastered[phraseId];
+          return { mastered };
+        });
+      },
       setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey: geminiApiKey.trim() }),
       setGeminiTtsModel: (geminiTtsModel) => set({ geminiTtsModel }),
       startPractice: (practicePhraseId, practiceReturnView) =>
@@ -131,6 +155,7 @@ export const useAppStore = create<AppState>()(
         mastered: state.mastered,
         widgetEnabled: state.widgetEnabled,
         phraseShuffle: state.phraseShuffle,
+        dailyPick: state.dailyPick,
         geminiApiKey: state.geminiApiKey,
         geminiTtsModel: state.geminiTtsModel,
         backupRecordings: state.backupRecordings,
