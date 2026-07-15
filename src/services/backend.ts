@@ -192,6 +192,15 @@ export async function downloadRecording(phraseId: string): Promise<Blob | null> 
   return data;
 }
 
+/** Remove one mastered phrase (row + backed-up recording) from the server. */
+export async function deleteMasteredRemote(phraseId: string): Promise<void> {
+  const supabase = getSupabase();
+  const userId = await currentUserId();
+  if (!supabase || !userId) return;
+  await supabase.from('mastered').delete().eq('user_id', userId).eq('phrase_id', phraseId);
+  await supabase.storage.from('recordings').remove([`${userId}/${phraseId}`]);
+}
+
 /** Wipe the signed-in user's server copy (used by "Reset progress"). */
 export async function clearRemote(): Promise<void> {
   const supabase = getSupabase();

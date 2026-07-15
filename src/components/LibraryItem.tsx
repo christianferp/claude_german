@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useRecordingUrl } from '../hooks/useRecordingUrl';
 import { LANGUAGES } from '../lib/languages';
 import type { MasteredEntry, Phrase } from '../lib/types';
+import { deleteMasteredRemote } from '../services/backend';
 import { useAppStore } from '../store/useAppStore';
 import { AudioPlayButton } from './AudioPlayButton';
-import { MicIcon, StepsIcon } from './icons';
+import { MicIcon, StepsIcon, TrashIcon } from './icons';
 import { RecordPanel } from './RecordPanel';
 import { TtsButton } from './TtsButton';
 
@@ -15,7 +16,15 @@ interface LibraryItemProps {
 
 export function LibraryItem({ phrase, entry }: LibraryItemProps) {
   const [rerecording, setRerecording] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const startPractice = useAppStore((state) => state.startPractice);
+  const deleteMastered = useAppStore((state) => state.deleteMastered);
+
+  const handleDelete = () => {
+    deleteMastered(phrase.id);
+    // Best-effort server cleanup; the local removal above is authoritative.
+    void deleteMasteredRemote(phrase.id).catch(() => {});
+  };
   // masteredAt changes on every re-record, which refreshes the object URL.
   const recordingUrl = useRecordingUrl(phrase.id, entry.masteredAt);
   const meta = LANGUAGES[phrase.language];
@@ -57,7 +66,38 @@ export function LibraryItem({ phrase, entry }: LibraryItemProps) {
           <StepsIcon className="h-4 w-4" />
           Practice
         </button>
+        {confirmingDelete ? (
+          <span className="flex items-center gap-1.5">
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 rounded-full bg-blush-500 px-3 py-2 text-sm font-semibold text-white active:bg-blush-600"
+            >
+              <TrashIcon className="h-4 w-4" />
+              Delete?
+            </button>
+            <button
+              onClick={() => setConfirmingDelete(false)}
+              className="rounded-full bg-cream-100 px-3 py-2 text-sm font-semibold text-slate-600 active:bg-cream-200"
+            >
+              Keep
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            className="flex items-center gap-1.5 rounded-full bg-cream-100 px-3 py-2 text-sm font-semibold text-slate-400 active:bg-cream-200"
+            aria-label={`Delete "${phrase.text}" from mastered`}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </button>
+        )}
       </div>
+      {confirmingDelete && (
+        <p className="mt-2 text-xs text-slate-400">
+          Removes it from your library (and your account) — the phrase returns to the daily
+          rotation.
+        </p>
+      )}
 
       {rerecording && (
         <div className="mt-3">
