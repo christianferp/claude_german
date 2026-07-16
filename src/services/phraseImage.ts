@@ -20,16 +20,51 @@ import { GEMINI_BASE_URL } from './gemini';
 import { imageStorage } from './imageStorage';
 
 /**
- * Image model names churn as Google ships new "Nano Banana" generations;
- * walk the list on 404 and remember what worked (same pattern as STT).
+ * Image model names churn as Google ships new "Nano Banana" generations, so
+ * hardcoded ids rot. Instead, ask the API which image-capable models this
+ * key can use (a free ListModels call), rank them (newest flash first), and
+ * remember what actually works. Static seeds remain as a last resort.
  */
-const IMAGE_MODEL_CANDIDATES = [
-  'gemini-3.1-flash-lite-image',
-  'gemini-3.1-flash-image',
-  'gemini-2.5-flash-image',
-  'gemini-2.5-flash-image-preview',
-];
-let imageModelIndex = 0;
+const FALLBACK_IMAGE_MODELS = ['gemini-2.5-flash-image', 'gemini-2.5-flash-image-preview'];
+let discoveredModels: Promise<string[]> | null = null;
+let workingModel: string | null = null;
+
+function rankImageModel(id: string): number {
+  const version = /(\d+)\.(\d+)/.exec(id);
+  return (
+    (version ? Number(version[1]) * 10 + Number(version[2]) : 0) +
+    (id.includes('flash') ? 5 : 0) +
+    (id.includes('lite') ? 1 : 0) +
+    (id.includes('preview') ? -0.5 : 0)
+  );
+}
+
+async function listImageModels(apiKey: string): Promise<string[]> {
+  if (!discoveredModels) {
+    discoveredModels = (async () => {
+      try {
+        const response = await fetch(`${GEMINI_BASE_URL}/models?pageSize=1000`, {
+          headers: { 'x-goog-api-key': apiKey },
+        });
+        if (!response.ok) return FALLBACK_IMAGE_MODELS;
+        const payload = (await response.json()) as {
+          models?: { name?: string; supportedGenerationMethods?: string[] }[];
+        };
+        const ids = (payload.models ?? [])
+          .filter((model) => (model.supportedGenerationMethods ?? []).includes('generateContent'))
+          .map((model) => (model.name ?? '').replace(/^models\//, ''))
+          .filter((id) => id.includes('image') && !id.startsWith('imagen') && !id.includes('veo'))
+          .sort((a, b) => rankImageModel(b) - rankImageModel(a));
+        const merged = [...ids, ...FALLBACK_IMAGE_MODELS.filter((id) => !ids.includes(id))];
+        return merged.length > 0 ? merged : FALLBACK_IMAGE_MODELS;
+      } catch {
+        discoveredModels = null; // allow a retry later
+        return FALLBACK_IMAGE_MODELS;
+      }
+    })();
+  }
+  return discoveredModels;
+}
 
 const BUCKET = 'phrase-images';
 
@@ -47,33 +82,67 @@ function buildPrompt(phrase: Phrase): string {
   );
 }
 
-async function generateImage(phrase: Phrase): Promise<Blob | null> {
-  const apiKey = useAppStore.getState().geminiApiKey;
-  if (!apiKey) return null;
+interface GenerateContentImagePayload {
+  candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[];
+}
 
-  while (imageModelIndex < IMAGE_MODEL_CANDIDATES.length) {
-    const model = IMAGE_MODEL_CANDIDATES[imageModelIndex];
+function extractImage(payload: GenerateContentImagePayload): Blob | null {
+  const inline = payload.candidates?.[0]?.content?.parts?.find((part) =>
+    part.inlineData?.mimeType?.startsWith('image/'),
+  )?.inlineData;
+  if (!inline?.data) return null;
+  return new Blob([base64ToBytes(inline.data).buffer as ArrayBuffer], {
+    type: inline.mimeType ?? 'image/png',
+  });
+}
+
+/**
+ * One model attempt. Some model generations require
+ * `responseModalities: ["TEXT","IMAGE"]`, others reject unknown config —
+ * try with it first, then bare. Returns 'next' when the model should be
+ * skipped, 'abort' on key/quota problems where no model will do better.
+ */
+async function tryModel(
+  model: string,
+  prompt: string,
+  apiKey: string,
+): Promise<Blob | 'next' | 'abort'> {
+  for (const withConfig of [true, false]) {
+    const body: Record<string, unknown> = { contents: [{ parts: [{ text: prompt }] }] };
+    if (withConfig) body.generationConfig = { responseModalities: ['TEXT', 'IMAGE'] };
     const response = await fetch(`${GEMINI_BASE_URL}/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(phrase) }] }] }),
+      body: JSON.stringify(body),
     });
-    if (response.status === 404) {
-      imageModelIndex++;
+    if (response.ok) {
+      const image = extractImage((await response.json()) as GenerateContentImagePayload);
+      if (image) return image;
+      continue; // answered without an image — retry shape, then next model
+    }
+    if ([401, 403, 429].includes(response.status)) return 'abort';
+    console.warn(`Phrase image: ${model} responded HTTP ${response.status}`);
+    if (response.status === 404) return 'next';
+    // 400 etc. → try the other request shape, then the next model.
+  }
+  return 'next';
+}
+
+async function generateImage(phrase: Phrase): Promise<Blob | null> {
+  const apiKey = useAppStore.getState().geminiApiKey;
+  if (!apiKey) return null;
+  const prompt = buildPrompt(phrase);
+
+  const models = workingModel ? [workingModel] : await listImageModels(apiKey);
+  for (const model of models) {
+    const result = await tryModel(model, prompt, apiKey);
+    if (result === 'abort') return null;
+    if (result === 'next') {
+      if (workingModel === model) workingModel = null; // stopped working — rediscover
       continue;
     }
-    if (!response.ok) return null;
-
-    const payload = (await response.json()) as {
-      candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[];
-    };
-    const inline = payload.candidates?.[0]?.content?.parts?.find((part) =>
-      part.inlineData?.mimeType?.startsWith('image/'),
-    )?.inlineData;
-    if (!inline?.data) return null;
-    return new Blob([base64ToBytes(inline.data).buffer as ArrayBuffer], {
-      type: inline.mimeType ?? 'image/png',
-    });
+    workingModel = model;
+    return result;
   }
   return null;
 }
