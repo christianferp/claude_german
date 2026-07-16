@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePhraseImage } from '../hooks/usePhraseImage';
 import { useRecordingUrl } from '../hooks/useRecordingUrl';
 import { LANGUAGES } from '../lib/languages';
 import type { MasteredEntry, Phrase } from '../lib/types';
@@ -28,13 +29,24 @@ export function LibraryItem({ phrase, entry }: LibraryItemProps) {
   // masteredAt changes on every re-record, which refreshes the object URL.
   const recordingUrl = useRecordingUrl(phrase.id, entry.masteredAt);
   const meta = LANGUAGES[phrase.language];
+  // Cached/shared cartoon only — scrolling the library never generates.
+  const imageUrl = usePhraseImage(phrase, false);
 
   return (
     <li className="rounded-3xl bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-lg font-bold leading-snug text-slate-800">{phrase.text}</p>
-          <p className="mt-1 text-sm text-slate-500">{phrase.translation}</p>
+        <div className="flex items-start gap-3">
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt=""
+              className="mt-0.5 h-14 w-14 shrink-0 rounded-xl object-cover"
+            />
+          )}
+          <div>
+            <p className="text-lg font-bold leading-snug text-slate-800">{phrase.text}</p>
+            <p className="mt-1 text-sm text-slate-500">{phrase.translation}</p>
+          </div>
         </div>
         <span className="shrink-0 rounded-full bg-sage-50 px-2.5 py-1 text-xs font-semibold text-sage-600">
           {meta.flag} {phrase.level}

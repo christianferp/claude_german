@@ -1,11 +1,21 @@
 import { useState } from 'react';
+import { usePhraseImage } from '../hooks/usePhraseImage';
 import type { Phrase } from '../lib/types';
 
 export function PhraseCard({ phrase }: { phrase: Phrase }) {
   const [breakdownOpen, setBreakdownOpen] = useState(false);
+  // Funny AI cartoon as a memory hook — generated once, then cached/shared.
+  const imageUrl = usePhraseImage(phrase, true);
 
   return (
     <section className="rounded-3xl bg-white p-6 shadow-sm">
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt={`Cartoon illustrating: ${phrase.translation}`}
+          className="mb-4 max-h-52 w-full rounded-2xl object-cover"
+        />
+      )}
       <p className="text-[1.7rem] font-bold leading-snug text-slate-800">{phrase.text}</p>
       <p className="mt-2 text-base text-slate-500">{phrase.translation}</p>
 
