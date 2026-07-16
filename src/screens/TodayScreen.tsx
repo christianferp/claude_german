@@ -52,13 +52,15 @@ export function TodayScreen() {
 
       <PhraseCard phrase={phrase} />
 
-      <button
-        onClick={changePhrase}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-sage-200 bg-white py-2.5 text-sm font-semibold text-sage-700 transition-all duration-150 active:scale-[0.98] active:bg-sage-50"
-      >
-        <ShuffleIcon className="h-4 w-4" />
-        Change phrase
-      </button>
+      <div className="mt-1.5 flex justify-end">
+        <button
+          onClick={changePhrase}
+          className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-slate-400 active:text-slate-600"
+        >
+          <ShuffleIcon className="h-3.5 w-3.5" />
+          Change phrase
+        </button>
+      </div>
 
       <Button
         variant="secondary"

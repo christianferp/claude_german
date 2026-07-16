@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RecorderStatus } from '../lib/types';
+import { tts } from '../services/tts';
 
 /**
  * Preferred container/codec per browser. Safari only supports audio/mp4
@@ -94,17 +95,48 @@ export function useRecorder(): UseRecorder {
     setElapsedMs(0);
     setStatus('requesting');
 
+    // iOS in particular refuses/hangs mic capture while other audio is
+    // playing — silence the TTS engine before asking for the microphone.
+    tts.stop();
+
+    // A getUserMedia call that never settles (seen on some mobile browsers)
+    // would leave the UI stuck on a disabled button forever — time it out.
+    const withTimeout = <T,>(promise: Promise<T>): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<never>((_, timeoutReject) =>
+          window.setTimeout(
+            () => timeoutReject(new Error("The microphone didn't respond. Close other apps that may be using it and try again.")),
+            15_000,
+          ),
+        ),
+      ]);
+
     try {
       // Voice-optimised capture: clean up room echo/noise and let the
-      // browser level the gain so quiet speakers are still audible.
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1,
-        },
-      });
+      // browser level the gain so quiet speakers are still audible. Some
+      // browsers reject these constraints — fall back to a plain request.
+      let stream: MediaStream;
+      try {
+        stream = await withTimeout(
+          navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              channelCount: 1,
+            },
+          }),
+        );
+      } catch (err) {
+        if (
+          err instanceof DOMException &&
+          (err.name === 'NotAllowedError' || err.name === 'NotFoundError')
+        ) {
+          throw err; // permission/hardware problems won't be fixed by retrying
+        }
+        stream = await withTimeout(navigator.mediaDevices.getUserMedia({ audio: true }));
+      }
       streamRef.current = stream;
 
       const mime = pickMimeType();

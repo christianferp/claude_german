@@ -64,7 +64,7 @@ export function SettingsSheet() {
   return (
     <div className="fixed inset-0 z-30" role="dialog" aria-modal="true" aria-label="Settings">
       <button className="absolute inset-0 bg-black/30" onClick={close} aria-label="Close settings" />
-      <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-md rounded-t-3xl bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div className="absolute inset-x-0 bottom-0 mx-auto max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-cream-200" />
         <h2 className="text-lg font-bold text-slate-800">Settings</h2>
 
