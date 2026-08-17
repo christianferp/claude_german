@@ -12,9 +12,9 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import { AudioPlayButton } from './AudioPlayButton';
 import { Button } from './Button';
-import { LevelMeter } from './LevelMeter';
 import { PronunciationResultCard } from './PronunciationResult';
-import { CheckIcon, MicIcon, RestartIcon, StopIcon } from './icons';
+import { RecordingControls } from './RecordingControls';
+import { CheckIcon, MicIcon } from './icons';
 
 const CHECK_ERROR_MESSAGES: Record<CheckErrorKind, string> = {
   quota: "Gemini's free quota is used up for now — try again later.",
@@ -30,13 +30,6 @@ type CheckState =
   | { status: 'loading' }
   | { status: 'done'; result: PronunciationResult }
   | { status: 'error'; message: string };
-
-function formatMs(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
-}
 
 interface RecordPanelProps {
   phrase: Phrase;
@@ -142,26 +135,13 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
       )}
 
       {recorder.status === 'recording' && (
-        <div className="mt-3">
-          <LevelMeter analyser={recorder.analyser} />
-          <div className="mt-1 flex items-center justify-between px-1">
-            <span className="flex items-center gap-1.5 text-sm font-semibold text-blush-600">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blush-500" />
-              Recording
-            </span>
-            <span className="font-mono text-sm text-slate-500">{formatMs(recorder.elapsedMs)}</span>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <Button variant="secondary" onClick={recorder.restart} className="flex-1">
-              <RestartIcon />
-              Restart
-            </Button>
-            <Button variant="danger" onClick={recorder.stop} className="flex-1">
-              <StopIcon />
-              Stop &amp; Review
-            </Button>
-          </div>
-        </div>
+        <RecordingControls
+          analyser={recorder.analyser}
+          elapsedMs={recorder.elapsedMs}
+          onStop={recorder.stop}
+          onRestart={recorder.restart}
+          stopLabel="Stop & Review"
+        />
       )}
 
       {recorder.status === 'reviewing' && (

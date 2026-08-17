@@ -11,6 +11,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { isBackendConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import type { RecallRecord } from '../lib/recall';
+import { mergeDailyStreak } from '../lib/streak';
 import type { Language, Level, MasteredEntry } from '../lib/types';
 import { useAppStore } from '../store/useAppStore';
 import { audioStorage } from './audioStorage';
@@ -222,8 +223,16 @@ export async function syncNow(): Promise<void> {
       user_id: userId,
       language: store.language,
       levels: store.levels,
+      // Absent until migration-4-streak.sql adds the column — harmless either way.
+      streak: store.dailyStreak,
       updated_at: new Date().toISOString(),
     });
+  }
+
+  // Daily streak: adopt whichever device practiced more recently.
+  if (stateRow?.streak) {
+    const merged = mergeDailyStreak(store.dailyStreak, stateRow.streak);
+    if (merged !== store.dailyStreak) store.setDailyStreak(merged);
   }
 }
 

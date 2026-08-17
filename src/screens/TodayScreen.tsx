@@ -4,6 +4,7 @@ import { Header } from '../components/Header';
 import { PhraseCard } from '../components/PhraseCard';
 import { RecallChallenge } from '../components/RecallChallenge';
 import { RecordPanel } from '../components/RecordPanel';
+import { StreakBanner } from '../components/StreakBanner';
 import { TtsButton } from '../components/TtsButton';
 import { CheckIcon, LockIcon, ShuffleIcon, StepsIcon } from '../components/icons';
 import { useChangePhrase, usePhraseOfTheDay } from '../hooks/usePhraseOfTheDay';
@@ -14,7 +15,7 @@ import { useAppStore } from '../store/useAppStore';
 export function TodayScreen() {
   const phrase = usePhraseOfTheDay();
   const changePhrase = useChangePhrase();
-  const startPractice = useAppStore((state) => state.startPractice);
+  const startMemorize = useAppStore((state) => state.startMemorize);
   const isMastered = useAppStore((state) =>
     phrase ? Boolean(state.mastered[phrase.id]) : false,
   );
@@ -41,6 +42,7 @@ export function TodayScreen() {
   return (
     <div className="px-5">
       <Header title="Today's Phrase" />
+      <StreakBanner />
       <div className="flex items-center gap-2 pb-4">
         <p className="text-sm text-slate-400">{dateLine}</p>
         {isMastered && (
@@ -68,7 +70,7 @@ export function TodayScreen() {
 
       <Button
         variant="secondary"
-        onClick={() => startPractice(phrase.id, 'today')}
+        onClick={() => startMemorize(phrase.id, 'today')}
         className="mt-3 w-full"
       >
         <StepsIcon />

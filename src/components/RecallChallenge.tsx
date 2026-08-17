@@ -5,10 +5,10 @@ import { LANGUAGES } from '../lib/languages';
 import { pushRecall } from '../services/backend';
 import { useAppStore } from '../store/useAppStore';
 import { Button } from './Button';
-import { LevelMeter } from './LevelMeter';
 import { PronunciationResultCard } from './PronunciationResult';
+import { RecordingControls } from './RecordingControls';
 import { TtsButton } from './TtsButton';
-import { CheckIcon, MicIcon, RestartIcon, StopIcon } from './icons';
+import { CheckIcon, MicIcon } from './icons';
 
 /** Word-level score above which a spoken answer counts as remembered. */
 const PASS_SCORE = 0.75;
@@ -23,7 +23,7 @@ const PASS_SCORE = 0.75;
 export function RecallChallenge() {
   const state = useRecallChallenge();
   const hasGeminiKey = useAppStore((state) => Boolean(state.geminiApiKey));
-  const startPractice = useAppStore((state) => state.startPractice);
+  const startMemorize = useAppStore((state) => state.startMemorize);
   const [revealed, setRevealed] = useState(false);
 
   const phrase = state?.challenge.phrase;
@@ -93,11 +93,11 @@ export function RecallChallenge() {
               <button
                 onClick={() => {
                   state.miss();
-                  startPractice(phrase.id, 'today');
+                  startMemorize(phrase.id, 'today');
                 }}
                 className="w-full py-1 text-sm font-semibold text-sage-700 active:text-sage-800"
               >
-                Practice it step by step →
+                Memorize it step by step →
               </button>
             </>
           )}
@@ -114,19 +114,11 @@ export function RecallChallenge() {
           )}
 
           {check.status === 'recording' && (
-            <div className="mt-3">
-              <LevelMeter analyser={check.recorder.analyser} />
-              <div className="mt-2 flex gap-2">
-                <Button variant="secondary" onClick={check.restart} className="flex-1">
-                  <RestartIcon />
-                  Restart
-                </Button>
-                <Button variant="danger" onClick={check.stop} className="flex-1">
-                  <StopIcon />
-                  Stop
-                </Button>
-              </div>
-            </div>
+            <RecordingControls
+              analyser={check.recorder.analyser}
+              onStop={check.stop}
+              onRestart={check.restart}
+            />
           )}
 
           {check.status === 'checking' && (
