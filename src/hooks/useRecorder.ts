@@ -27,6 +27,8 @@ export interface UseRecorder {
   stop: () => void;
   /** Discard the current take and return to idle. */
   reset: () => void;
+  /** Discard whatever is in progress (recording or reviewed) and start over. */
+  restart: () => void;
   /** The finished take, available in the 'reviewing' state. */
   blob: Blob | null;
   /** Object URL for the finished take (revoked automatically). */
@@ -58,6 +60,23 @@ export function useRecorder(): UseRecorder {
     if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    const recorder = recorderRef.current;
+    if (recorder) {
+      // Detach handlers before stopping tracks below — some browsers fire a
+      // stop/dataavailable event on a MediaRecorder whose tracks just ended,
+      // and without this a discarded recorder can resurrect a stale take
+      // (and tear down a brand-new recording started right after it, as
+      // restart() does) via its old onstop closure.
+      recorder.ondataavailable = null;
+      recorder.onstop = null;
+      if (recorder.state !== 'inactive') {
+        try {
+          recorder.stop();
+        } catch {
+          /* already stopping/stopped */
+        }
+      }
     }
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
@@ -200,6 +219,13 @@ export function useRecorder(): UseRecorder {
     }
   }, []);
 
+  // Cancel whatever's happening (mid-recording or already reviewed) and
+  // immediately request the mic again — one tap instead of reset-then-tap.
+  const restart = useCallback(() => {
+    reset();
+    void start();
+  }, [reset, start]);
+
   // Release everything if the component unmounts mid-flow.
   useEffect(() => {
     return () => {
@@ -208,5 +234,5 @@ export function useRecorder(): UseRecorder {
     };
   }, [cleanupCapture]);
 
-  return { status, start, stop, reset, blob, blobUrl, analyser, elapsedMs, error };
+  return { status, start, stop, reset, restart, blob, blobUrl, analyser, elapsedMs, error };
 }

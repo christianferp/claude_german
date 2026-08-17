@@ -26,6 +26,8 @@ export interface UseSpokenCheck {
   stop: () => void;
   /** Discard the take and result, back to idle. */
   reset: () => void;
+  /** Cancel and immediately record again — one tap. */
+  restart: () => void;
 }
 
 export function useSpokenCheck(text: string, language: Language): UseSpokenCheck {
@@ -95,5 +97,11 @@ export function useSpokenCheck(text: string, language: Language): UseSpokenCheck
     start: () => void recorder.start(),
     stop: recorder.stop,
     reset,
+    restart: () => {
+      abortRef.current?.abort();
+      setResult(null);
+      setError(null);
+      recorder.restart();
+    },
   };
 }

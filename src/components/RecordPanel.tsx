@@ -14,7 +14,7 @@ import { AudioPlayButton } from './AudioPlayButton';
 import { Button } from './Button';
 import { LevelMeter } from './LevelMeter';
 import { PronunciationResultCard } from './PronunciationResult';
-import { CheckIcon, MicIcon, StopIcon } from './icons';
+import { CheckIcon, MicIcon, RestartIcon, StopIcon } from './icons';
 
 const CHECK_ERROR_MESSAGES: Record<CheckErrorKind, string> = {
   quota: "Gemini's free quota is used up for now — try again later.",
@@ -151,10 +151,16 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
             </span>
             <span className="font-mono text-sm text-slate-500">{formatMs(recorder.elapsedMs)}</span>
           </div>
-          <Button variant="danger" onClick={recorder.stop} className="mt-3 w-full">
-            <StopIcon />
-            Stop &amp; Review
-          </Button>
+          <div className="mt-3 flex gap-2">
+            <Button variant="secondary" onClick={recorder.restart} className="flex-1">
+              <RestartIcon />
+              Restart
+            </Button>
+            <Button variant="danger" onClick={recorder.stop} className="flex-1">
+              <StopIcon />
+              Stop &amp; Review
+            </Button>
+          </div>
         </div>
       )}
 
