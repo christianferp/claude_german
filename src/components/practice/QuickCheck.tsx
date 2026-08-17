@@ -1,7 +1,7 @@
 import { useSpokenCheck } from '../../hooks/useSpokenCheck';
 import type { Language } from '../../lib/types';
 import { useAppStore } from '../../store/useAppStore';
-import { MicIcon, StopIcon } from '../icons';
+import { MicIcon, RestartIcon, StopIcon } from '../icons';
 import { PronunciationResultCard } from '../PronunciationResult';
 
 interface QuickCheckProps {
@@ -33,14 +33,23 @@ export function QuickCheck({ text, language }: QuickCheckProps) {
         </button>
       )}
       {check.status === 'recording' && (
-        <button
-          onClick={check.stop}
-          className="flex items-center gap-1.5 rounded-full bg-blush-100 px-3 py-2 text-sm font-semibold text-blush-600"
-        >
-          <StopIcon className="h-4 w-4" />
-          <span className="h-2 w-2 animate-pulse rounded-full bg-blush-500" />
-          Stop
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={check.restart}
+            className="flex items-center gap-1.5 rounded-full bg-cream-100 px-3 py-2 text-sm font-semibold text-slate-600 active:bg-cream-200"
+          >
+            <RestartIcon className="h-4 w-4" />
+            Restart
+          </button>
+          <button
+            onClick={check.stop}
+            className="flex items-center gap-1.5 rounded-full bg-blush-100 px-3 py-2 text-sm font-semibold text-blush-600"
+          >
+            <StopIcon className="h-4 w-4" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-blush-500" />
+            Stop
+          </button>
+        </div>
       )}
       {check.status === 'checking' && (
         <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
