@@ -131,6 +131,33 @@ export function ShuffleIcon({ className = 'h-5 w-5' }: IconProps) {
   );
 }
 
+export function TargetIcon({ className = 'h-6 w-6' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function FlameIcon({ className = 'h-5 w-5' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2c1 3-3 4-3 7a3 3 0 0 0 6 0c1.5 1 2.5 3 2.5 5a5.5 5.5 0 0 1-11 0C6.5 9 9 6 12 2z" />
+    </svg>
+  );
+}
+
+export function ShieldIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
+      <path d="m9.5 12 1.8 1.8L15 10" />
+    </svg>
+  );
+}
+
 export function RestartIcon({ className = 'h-5 w-5' }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { localDateISO } from '../lib/dailyIndex';
 import { afterMiss, afterPass, type RecallRecord } from '../lib/recall';
+import { INITIAL_STREAK, recordPracticeDay, type DailyStreak } from '../lib/streak';
 import type { AppView, Language, Level, MasteredEntry } from '../lib/types';
 import { audioStorage } from '../services/audioStorage';
 import { DEFAULT_GEMINI_TTS_MODEL } from '../services/gemini';
@@ -44,14 +46,16 @@ interface AppState {
   recall: Record<string, RecallRecord>;
   /** Challenge answered or dismissed for this date — hides the card today. */
   recallDone: { date: string; phraseId: string } | null;
+  /** Consecutive days practiced, with "freeze" protections (see lib/streak.ts). */
+  dailyStreak: DailyStreak;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
   settingsOpen: boolean;
-  /** Phrase being practiced in the memorization wizard. */
-  practicePhraseId: string | null;
+  /** Phrase being practiced in the step-by-step memorization wizard. */
+  memorizePhraseId: string | null;
   /** Where the wizard's exit button returns to. */
-  practiceReturnView: AppView;
+  memorizeReturnView: AppView;
   /** Signed-in Supabase user; null when logged out or backend unconfigured. */
   authUser: { id: string; email: string } | null;
 
@@ -68,7 +72,7 @@ interface AppState {
   deleteMastered: (phraseId: string) => void;
   setGeminiApiKey: (key: string) => void;
   setGeminiTtsModel: (model: string) => void;
-  startPractice: (phraseId: string, returnView: AppView) => void;
+  startMemorize: (phraseId: string, returnView: AppView) => void;
   setAuthUser: (user: { id: string; email: string } | null) => void;
   setBackupRecordings: (enabled: boolean) => void;
   setWelcomeDone: (done: boolean) => void;
@@ -80,8 +84,16 @@ interface AppState {
   missRecall: (phraseId: string) => void;
   /** Put the challenge away until tomorrow without changing its schedule. */
   dismissRecallToday: (phraseId: string, date: string) => void;
+  /**
+   * Answer from the Practice tab: updates that phrase's SRS schedule only —
+   * unlike passRecall it never sets recallDone, so drilling a phrase here
+   * never hides the (possibly different) daily "Do you still remember?" card.
+   */
+  recordRecallAnswer: (phraseId: string, correct: boolean) => void;
   /** Adopt recall records pulled from the backend. */
   mergeRecall: (records: Record<string, RecallRecord>) => void;
+  /** Adopt a streak record pulled from the backend (merge done by caller). */
+  setDailyStreak: (streak: DailyStreak) => void;
   setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
@@ -101,10 +113,11 @@ export const useAppStore = create<AppState>()(
       welcomeDone: false,
       recall: {},
       recallDone: null,
+      dailyStreak: INITIAL_STREAK,
       view: 'today',
       settingsOpen: false,
-      practicePhraseId: null,
-      practiceReturnView: 'today',
+      memorizePhraseId: null,
+      memorizeReturnView: 'today',
       authUser: null,
 
       setLanguage: (language) => set({ language, view: 'today' }),
@@ -143,8 +156,8 @@ export const useAppStore = create<AppState>()(
       },
       setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey: geminiApiKey.trim() }),
       setGeminiTtsModel: (geminiTtsModel) => set({ geminiTtsModel }),
-      startPractice: (practicePhraseId, practiceReturnView) =>
-        set({ practicePhraseId, practiceReturnView, view: 'practice' }),
+      startMemorize: (memorizePhraseId, memorizeReturnView) =>
+        set({ memorizePhraseId, memorizeReturnView, view: 'memorize' }),
       setAuthUser: (authUser) => set({ authUser }),
       setBackupRecordings: (backupRecordings) => set({ backupRecordings }),
       setWelcomeDone: (welcomeDone) => set({ welcomeDone }),
@@ -159,21 +172,33 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           recall: { ...state.recall, [phraseId]: afterPass(state.recall[phraseId], Date.now()) },
           recallDone: { date, phraseId },
+          dailyStreak: recordPracticeDay(state.dailyStreak, localDateISO()),
         })),
       missRecall: (phraseId) =>
         set((state) => ({
           // Deliberately no recallDone: a miss leaves the card on screen.
           recall: { ...state.recall, [phraseId]: afterMiss(Date.now()) },
+          // Showing up and answering — even wrong — still counts as practice.
+          dailyStreak: recordPracticeDay(state.dailyStreak, localDateISO()),
         })),
       dismissRecallToday: (phraseId, date) => set({ recallDone: { date, phraseId } }),
+      recordRecallAnswer: (phraseId, correct) =>
+        set((state) => ({
+          recall: {
+            ...state.recall,
+            [phraseId]: correct ? afterPass(state.recall[phraseId], Date.now()) : afterMiss(Date.now()),
+          },
+          dailyStreak: recordPracticeDay(state.dailyStreak, localDateISO()),
+        })),
       mergeRecall: (records) =>
         set((state) => ({ recall: { ...state.recall, ...records } })),
+      setDailyStreak: (dailyStreak) => set({ dailyStreak }),
       setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
           /* storage may be unavailable; metadata reset still proceeds */
         });
-        set({ mastered: {}, recall: {}, recallDone: null });
+        set({ mastered: {}, recall: {}, recallDone: null, dailyStreak: INITIAL_STREAK });
       },
     }),
     {
@@ -192,6 +217,7 @@ export const useAppStore = create<AppState>()(
         welcomeDone: state.welcomeDone,
         recall: state.recall,
         recallDone: state.recallDone,
+        dailyStreak: state.dailyStreak,
       }),
     },
   ),

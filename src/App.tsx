@@ -4,6 +4,7 @@ import { TabBar } from './components/TabBar';
 import { isBackendConfigured } from './config';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { LoginScreen } from './screens/LoginScreen';
+import { MemorizeScreen } from './screens/MemorizeScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { PracticeScreen } from './screens/PracticeScreen';
 import { TodayScreen } from './screens/TodayScreen';
@@ -41,10 +42,11 @@ export default function App() {
           <main className="pb-28">
             {view === 'today' && <TodayScreen />}
             {view === 'library' && <LibraryScreen />}
-            {view === 'widget' && <WidgetPreviewScreen />}
             {view === 'practice' && <PracticeScreen />}
+            {view === 'widget' && <WidgetPreviewScreen />}
+            {view === 'memorize' && <MemorizeScreen />}
           </main>
-          {view !== 'widget' && view !== 'practice' && <TabBar />}
+          {view !== 'widget' && view !== 'memorize' && <TabBar />}
           {settingsOpen && <SettingsSheet />}
         </>
       )}

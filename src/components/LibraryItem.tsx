@@ -18,7 +18,7 @@ interface LibraryItemProps {
 export function LibraryItem({ phrase, entry }: LibraryItemProps) {
   const [rerecording, setRerecording] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const startPractice = useAppStore((state) => state.startPractice);
+  const startMemorize = useAppStore((state) => state.startMemorize);
   const deleteMastered = useAppStore((state) => state.deleteMastered);
 
   const handleDelete = () => {
@@ -72,11 +72,11 @@ export function LibraryItem({ phrase, entry }: LibraryItemProps) {
           {rerecording ? 'Cancel' : 'Re-record'}
         </button>
         <button
-          onClick={() => startPractice(phrase.id, 'library')}
+          onClick={() => startMemorize(phrase.id, 'library')}
           className="flex items-center gap-1.5 rounded-full bg-cream-100 px-3 py-2 text-sm font-semibold text-slate-600 active:bg-cream-200"
         >
           <StepsIcon className="h-4 w-4" />
-          Practice
+          Memorize
         </button>
         {confirmingDelete ? (
           <span className="flex items-center gap-1.5">

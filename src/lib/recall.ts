@@ -87,6 +87,52 @@ export function pickDueChallenge(
   return best ? { phrase: best.phrase, entry: best.entry, record: best.record } : null;
 }
 
+export interface PracticeQueueItem {
+  phrase: Phrase;
+  entry: MasteredEntry;
+  record: RecallRecord | undefined;
+  /** Whether its scheduled recall date has already arrived. */
+  dueNow: boolean;
+}
+
+/**
+ * Every mastered phrase in the active language, ordered most-overdue-first
+ * then least-recently-recalled — the drill queue for the Practice tab.
+ * Unlike `pickDueChallenge` this returns the whole list (not capped at one)
+ * and isn't gated by "already handled today" or a due-date cutoff, so the
+ * tab is always drillable even when nothing is technically due yet.
+ */
+export function buildPracticeQueue(
+  mastered: Record<string, MasteredEntry>,
+  recall: Record<string, RecallRecord>,
+  language: Language,
+  now: number,
+): PracticeQueueItem[] {
+  const byId = new Map(
+    Object.values(PHRASES[language])
+      .flat()
+      .map((phrase) => [phrase.id, phrase] as const),
+  );
+
+  const items: (PracticeQueueItem & { due: number })[] = [];
+  for (const entry of Object.values(mastered)) {
+    const phrase = byId.get(entry.phraseId);
+    if (!phrase) continue; // other language, or an id no longer in the pool
+    const record = recall[entry.phraseId];
+    const due = dueAt(entry, record);
+    items.push({ phrase, entry, record, due, dueNow: due <= now });
+  }
+
+  items.sort((a, b) => {
+    if (a.due !== b.due) return a.due - b.due;
+    const aLast = a.record?.lastRecallAt ?? 0;
+    const bLast = b.record?.lastRecallAt ?? 0;
+    return aLast - bLast;
+  });
+
+  return items.map(({ phrase, entry, record, dueNow }) => ({ phrase, entry, record, dueNow }));
+}
+
 /** "today" / "yesterday" / "5 days ago" — the challenge card's subtitle. */
 export function describeAge(timestamp: number, now: number): string {
   const days = Math.floor((now - timestamp) / DAY_MS);
