@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Header } from '../components/Header';
 import { PhraseCard } from '../components/PhraseCard';
+import { RecallChallenge } from '../components/RecallChallenge';
 import { RecordPanel } from '../components/RecordPanel';
 import { TtsButton } from '../components/TtsButton';
 import { CheckIcon, LockIcon, ShuffleIcon, StepsIcon } from '../components/icons';
@@ -49,6 +50,9 @@ export function TodayScreen() {
           </span>
         )}
       </div>
+
+      {/* Warm-up on a previously learned phrase; hides itself once handled. */}
+      <RecallChallenge />
 
       <PhraseCard phrase={phrase} />
 

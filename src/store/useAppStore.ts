@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { afterMiss, afterPass, type RecallRecord } from '../lib/recall';
 import type { AppView, Language, Level, MasteredEntry } from '../lib/types';
 import { audioStorage } from '../services/audioStorage';
 import { DEFAULT_GEMINI_TTS_MODEL } from '../services/gemini';
@@ -39,6 +40,10 @@ interface AppState {
   backupRecordings: boolean;
   /** Welcome/login screen passed (signed in or "just try it") — never again. */
   welcomeDone: boolean;
+  /** Spaced-repetition state per mastered phrase (see lib/recall.ts). */
+  recall: Record<string, RecallRecord>;
+  /** Challenge answered or dismissed for this date — hides the card today. */
+  recallDone: { date: string; phraseId: string } | null;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
@@ -69,6 +74,14 @@ interface AppState {
   setWelcomeDone: (done: boolean) => void;
   /** Adopt rows pulled from the backend (newer-wins merge done by caller). */
   mergeMastered: (entries: MasteredEntry[]) => void;
+  /** Recall challenge answered correctly → streak up, next due pushed out. */
+  passRecall: (phraseId: string, date: string) => void;
+  /** Recall challenge missed → streak reset, due again tomorrow. */
+  missRecall: (phraseId: string) => void;
+  /** Put the challenge away until tomorrow without changing its schedule. */
+  dismissRecallToday: (phraseId: string, date: string) => void;
+  /** Adopt recall records pulled from the backend. */
+  mergeRecall: (records: Record<string, RecallRecord>) => void;
   setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
@@ -86,6 +99,8 @@ export const useAppStore = create<AppState>()(
       geminiTtsModel: DEFAULT_GEMINI_TTS_MODEL,
       backupRecordings: false,
       welcomeDone: false,
+      recall: {},
+      recallDone: null,
       view: 'today',
       settingsOpen: false,
       practicePhraseId: null,
@@ -121,7 +136,9 @@ export const useAppStore = create<AppState>()(
         set((state) => {
           const mastered = { ...state.mastered };
           delete mastered[phraseId];
-          return { mastered };
+          const recall = { ...state.recall };
+          delete recall[phraseId];
+          return { mastered, recall };
         });
       },
       setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey: geminiApiKey.trim() }),
@@ -138,12 +155,25 @@ export const useAppStore = create<AppState>()(
             ...Object.fromEntries(entries.map((entry) => [entry.phraseId, entry])),
           },
         })),
+      passRecall: (phraseId, date) =>
+        set((state) => ({
+          recall: { ...state.recall, [phraseId]: afterPass(state.recall[phraseId], Date.now()) },
+          recallDone: { date, phraseId },
+        })),
+      missRecall: (phraseId) =>
+        set((state) => ({
+          // Deliberately no recallDone: a miss leaves the card on screen.
+          recall: { ...state.recall, [phraseId]: afterMiss(Date.now()) },
+        })),
+      dismissRecallToday: (phraseId, date) => set({ recallDone: { date, phraseId } }),
+      mergeRecall: (records) =>
+        set((state) => ({ recall: { ...state.recall, ...records } })),
       setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
           /* storage may be unavailable; metadata reset still proceeds */
         });
-        set({ mastered: {} });
+        set({ mastered: {}, recall: {}, recallDone: null });
       },
     }),
     {
@@ -160,6 +190,8 @@ export const useAppStore = create<AppState>()(
         geminiTtsModel: state.geminiTtsModel,
         backupRecordings: state.backupRecordings,
         welcomeDone: state.welcomeDone,
+        recall: state.recall,
+        recallDone: state.recallDone,
       }),
     },
   ),

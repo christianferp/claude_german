@@ -153,7 +153,9 @@ async function fetchFromBucket(phraseId: string): Promise<Blob | null> {
     const response = await fetch(
       `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${phraseId}.png`,
     );
-    if (!response.ok) return null;
+    // A missing object can come back as a JSON error with a 200 from some
+    // proxies — only treat actual image bytes as a hit, never render junk.
+    if (!response.ok || !response.headers.get('content-type')?.startsWith('image/')) return null;
     return await response.blob();
   } catch {
     return null;
