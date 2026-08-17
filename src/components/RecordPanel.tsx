@@ -139,7 +139,7 @@ export function RecordPanel({ phrase, onMastered }: RecordPanelProps) {
           analyser={recorder.analyser}
           elapsedMs={recorder.elapsedMs}
           onStop={recorder.stop}
-          onRestart={recorder.restart}
+          onDiscard={recorder.reset}
           stopLabel="Stop & Review"
         />
       )}

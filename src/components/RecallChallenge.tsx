@@ -117,7 +117,7 @@ export function RecallChallenge() {
             <RecordingControls
               analyser={check.recorder.analyser}
               onStop={check.stop}
-              onRestart={check.restart}
+              onDiscard={check.reset}
             />
           )}
 
