@@ -10,6 +10,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { isBackendConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
+import type { RecallRecord } from '../lib/recall';
 import type { Language, Level, MasteredEntry } from '../lib/types';
 import { useAppStore } from '../store/useAppStore';
 import { audioStorage } from './audioStorage';
@@ -39,6 +40,10 @@ interface MasteredRow {
   mastered_at: string;
   recording_mime: string;
   has_audio: boolean;
+  // Recall-challenge schedule; absent until migration-3-recall.sql is run.
+  recall_streak?: number | null;
+  last_recall_at?: string | null;
+  next_due_at?: string | null;
 }
 
 async function currentUserId(): Promise<string | null> {
@@ -118,13 +123,39 @@ export async function pushMastered(entry: MasteredEntry, blob?: Blob | null): Pr
   let hasAudio = false;
   if (backup && blob) hasAudio = await uploadRecording(userId, entry.phraseId, blob);
 
+  const recall = useAppStore.getState().recall[entry.phraseId];
   await supabase.from('mastered').upsert({
     user_id: userId,
     phrase_id: entry.phraseId,
     mastered_at: new Date(entry.masteredAt).toISOString(),
     recording_mime: entry.recordingMime,
     has_audio: hasAudio,
+    ...(recall
+      ? {
+          recall_streak: recall.streak,
+          last_recall_at: new Date(recall.lastRecallAt).toISOString(),
+          next_due_at: new Date(recall.nextDueAt).toISOString(),
+        }
+      : {}),
   } satisfies MasteredRow);
+}
+
+/** Push the schedule after a challenge was answered. Best-effort. */
+export async function pushRecall(phraseId: string): Promise<void> {
+  const supabase = getSupabase();
+  const userId = await currentUserId();
+  if (!supabase || !userId) return;
+  const record = useAppStore.getState().recall[phraseId];
+  if (!record) return;
+  await supabase
+    .from('mastered')
+    .update({
+      recall_streak: record.streak,
+      last_recall_at: new Date(record.lastRecallAt).toISOString(),
+      next_due_at: new Date(record.nextDueAt).toISOString(),
+    })
+    .eq('user_id', userId)
+    .eq('phrase_id', phraseId);
 }
 
 /**
@@ -142,14 +173,29 @@ export async function syncNow(): Promise<void> {
   const { data: rows } = await supabase.from('mastered').select('*');
   const remote = new Map((rows as MasteredRow[] | null)?.map((r) => [r.phrase_id, r]) ?? []);
   const incoming: MasteredEntry[] = [];
+  const incomingRecall: Record<string, RecallRecord> = {};
   for (const row of remote.values()) {
     const local = store.mastered[row.phrase_id];
     const remoteAt = Date.parse(row.mastered_at);
     if (!local || remoteAt > local.masteredAt) {
       incoming.push({ phraseId: row.phrase_id, masteredAt: remoteAt, recordingMime: row.recording_mime });
     }
+    // Recall schedule: newest answer wins, so a challenge done on another
+    // device doesn't come back here.
+    if (row.last_recall_at && row.next_due_at) {
+      const lastRecallAt = Date.parse(row.last_recall_at);
+      const localRecall = store.recall[row.phrase_id];
+      if (!localRecall || lastRecallAt > localRecall.lastRecallAt) {
+        incomingRecall[row.phrase_id] = {
+          streak: row.recall_streak ?? 0,
+          lastRecallAt,
+          nextDueAt: Date.parse(row.next_due_at),
+        };
+      }
+    }
   }
   if (incoming.length > 0) store.mergeMastered(incoming);
+  if (Object.keys(incomingRecall).length > 0) store.mergeRecall(incomingRecall);
 
   // …and push what only exists locally.
   for (const entry of Object.values(store.mastered)) {
