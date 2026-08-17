@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from './Button';
 import { LevelMeter } from './LevelMeter';
-import { RestartIcon, StopIcon } from './icons';
+import { StopIcon, TrashIcon } from './icons';
 
 interface RecordingControlsProps {
   /** Live analyser for the level meter (ignored in compact mode). */
@@ -9,7 +9,8 @@ interface RecordingControlsProps {
   /** Elapsed recording time in ms; shown next to the "Recording" label when provided. */
   elapsedMs?: number;
   onStop: () => void;
-  onRestart: () => void;
+  /** Discard the current take and return to idle — the user starts the next take themselves. */
+  onDiscard: () => void;
   /** Label on the Stop button (default "Stop"). */
   stopLabel?: string;
   /** Chip-style compact controls (used inline, e.g. the wizard's Test yourself chip). */
@@ -26,28 +27,29 @@ function formatMs(ms: number): string {
 /**
  * Shared "actively recording" controls for every recording surface in the
  * app. Stop is always the big, one-tap primary action — never a mis-tap
- * risk. Restart is a small, quiet secondary action that asks for
- * confirmation before discarding anything: the recording keeps running the
- * whole time you're deciding, so Stop stays available and a stray tap can
- * never destroy a take mid-sentence.
+ * risk. Discard is a small, quiet secondary action that asks for
+ * confirmation before doing anything: the recording keeps running the whole
+ * time you're deciding, so Stop stays available and a stray tap can never
+ * destroy a take mid-sentence. Confirming lands back on the idle "Record"
+ * button — it never restarts recording automatically.
  */
 export function RecordingControls({
   analyser,
   elapsedMs,
   onStop,
-  onRestart,
+  onDiscard,
   stopLabel = 'Stop',
   compact = false,
 }: RecordingControlsProps) {
-  const [confirmingRestart, setConfirmingRestart] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
-  const restartControl = confirmingRestart ? (
+  const discardControl = confirming ? (
     <div className={`flex items-center gap-2 ${compact ? '' : 'mt-2 justify-center'}`}>
       <span className={compact ? 'text-xs text-slate-500' : 'text-sm text-slate-500'}>
         Discard this take?
       </span>
       <button
-        onClick={() => setConfirmingRestart(false)}
+        onClick={() => setConfirming(false)}
         className={`rounded-full bg-cream-100 font-semibold text-slate-600 active:bg-cream-200 ${
           compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-1.5 text-sm'
         }`}
@@ -56,26 +58,26 @@ export function RecordingControls({
       </button>
       <button
         onClick={() => {
-          setConfirmingRestart(false);
-          onRestart();
+          setConfirming(false);
+          onDiscard();
         }}
         className={`flex items-center gap-1 rounded-full bg-blush-500 font-semibold text-white active:bg-blush-600 ${
           compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-1.5 text-sm'
         }`}
       >
-        <RestartIcon className="h-3.5 w-3.5" />
-        Discard &amp; restart?
+        <TrashIcon className="h-3.5 w-3.5" />
+        Discard
       </button>
     </div>
   ) : (
     <button
-      onClick={() => setConfirmingRestart(true)}
+      onClick={() => setConfirming(true)}
       className={`flex items-center justify-center gap-1.5 font-semibold text-slate-400 active:text-slate-600 ${
         compact ? 'py-1.5 text-xs' : 'mt-2 w-full py-1.5 text-sm'
       }`}
     >
-      <RestartIcon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-      Restart
+      <TrashIcon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+      Discard
     </button>
   );
 
@@ -90,7 +92,7 @@ export function RecordingControls({
           <span className="h-2 w-2 animate-pulse rounded-full bg-blush-500" />
           {stopLabel}
         </button>
-        {restartControl}
+        {discardControl}
       </div>
     );
   }
@@ -111,7 +113,7 @@ export function RecordingControls({
         <StopIcon />
         {stopLabel}
       </Button>
-      {restartControl}
+      {discardControl}
     </div>
   );
 }

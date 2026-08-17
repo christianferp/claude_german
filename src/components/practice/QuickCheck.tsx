@@ -37,7 +37,7 @@ export function QuickCheck({ text, language }: QuickCheckProps) {
         <RecordingControls
           analyser={check.recorder.analyser}
           onStop={check.stop}
-          onRestart={check.restart}
+          onDiscard={check.reset}
           compact
         />
       )}
