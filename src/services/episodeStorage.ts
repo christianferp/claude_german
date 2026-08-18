@@ -1,7 +1,7 @@
 /**
- * IndexedDB cache for generated podcast episodes. Episodes are expensive to
- * produce (one text-model call each), so once written they are reused
- * forever — the daily key means yesterday's episode stays replayable.
+ * IndexedDB store for AI-written podcast episodes. Each one costs a
+ * text-model call, so an episode is written once and then kept for good —
+ * it becomes a permanent item on the learner's shelf.
  *
  * Separate database from recordings/images so none of them needs a version
  * migration when another changes.
@@ -51,5 +51,19 @@ export const episodeStorage = {
       store.get(id),
     );
     return episode ?? null;
+  },
+
+  /** Every written episode, for building the shelf. Newest first. */
+  async list(): Promise<PodcastEpisode[]> {
+    const all = await withStore<PodcastEpisode[]>('readonly', (store) => store.getAll());
+    return all
+      // Episodes cached by an earlier version were keyed by date and have no
+      // createdISO; they are not shelf items, so leave them out.
+      .filter((episode) => typeof episode?.createdISO === 'string')
+      .sort((a, b) => (b.createdISO ?? '').localeCompare(a.createdISO ?? ''));
+  },
+
+  async remove(id: string): Promise<void> {
+    await withStore('readwrite', (store) => store.delete(id));
   },
 };

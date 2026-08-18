@@ -1,102 +1,164 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { Header } from '../components/Header';
 import { NowPlayingBar } from '../components/podcast/NowPlayingBar';
 import { TranscriptLine } from '../components/podcast/TranscriptLine';
-import { HeadphonesIcon } from '../components/icons';
+import { BackIcon, HeadphonesIcon, TrashIcon } from '../components/icons';
 import { useEpisodeAudio } from '../hooks/useEpisodeAudio';
-import { usePodcastEpisode } from '../hooks/usePodcastEpisode';
+import { usePodcastShelf } from '../hooks/usePodcastShelf';
 import { usePodcastPlayer } from '../hooks/usePodcastPlayer';
+import { isBuiltIn } from '../lib/episodeLibrary';
 import { LANGUAGES } from '../lib/languages';
 import { normalizeWord } from '../lib/textTokens';
 import type { PodcastEpisode } from '../lib/types';
+import { listBuiltEpisodeIds } from '../services/episodeAudio';
 import { useAppStore } from '../store/useAppStore';
 
-/** Rough spoken length, for the idle card. Short sentences ≈ 3.5s each. */
+/** Rough spoken length. Short sentences land around 3.5s each. */
 function estimateMinutes(lineCount: number): number {
   return Math.max(1, Math.round((lineCount * 3.5) / 60));
 }
 
 /**
- * Podcast tab: a short listening episode generated fresh each day on a new
- * topic, at the learner's level, deliberately repeating a handful of new
- * words so they stick from context. The transcript scrolls in sync with the
- * audio and any word can be tapped to save it for later study.
+ * Podcast tab: a shelf of listening episodes at the learner's level, each
+ * one a single continuous track with the transcript scrolling in sync.
+ *
+ * Episodes are not tied to the calendar. Several ship with the app, so the
+ * shelf is full and playable from the first visit with nothing to wait for,
+ * and a new AI-written one can be added whenever the learner wants a fresh
+ * topic. Any word in a transcript can be tapped to save it for later study.
  */
 export function PodcastScreen() {
   const language = useAppStore((state) => state.language);
-  const hasGeminiKey = useAppStore((state) => Boolean(state.geminiApiKey));
-  const { status, episode, error, topic, cached, load } = usePodcastEpisode();
+  const lastEpisodeId = useAppStore((state) => state.lastEpisodeId);
+  const setLastEpisodeId = useAppStore((state) => state.setLastEpisodeId);
+  const shelf = usePodcastShelf();
+
+  const open = useMemo(
+    () => shelf.episodes.find((episode) => episode.id === lastEpisodeId) ?? null,
+    [shelf.episodes, lastEpisodeId],
+  );
 
   if (!language) return null;
-  const meta = LANGUAGES[language];
 
-  if (!hasGeminiKey) {
-    return (
-      <div className="px-5">
-        <Header title="Podcast" />
-        <div className="rounded-3xl bg-white p-8 text-center shadow-sm">
-          <p className="text-3xl">🎧</p>
-          <p className="mt-3 font-semibold text-slate-700">Episodes are AI-generated</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Add your free Gemini API key in Settings and a new {meta.name} episode will be written
-            for you every day, at your level.
-          </p>
-        </div>
-      </div>
-    );
+  if (open) {
+    return <EpisodePlayer episode={open} onBack={() => setLastEpisodeId(null)} />;
   }
 
-  if (status === 'ready' && episode) {
-    return <EpisodePlayer episode={episode} />;
-  }
+  return <EpisodeShelf shelf={shelf} onOpen={(id) => setLastEpisodeId(id)} />;
+}
+
+function EpisodeShelf({
+  shelf,
+  onOpen,
+}: {
+  shelf: ReturnType<typeof usePodcastShelf>;
+  onOpen: (id: string) => void;
+}) {
+  const language = useAppStore((state) => state.language);
+  const hasGeminiKey = useAppStore((state) => Boolean(state.geminiApiKey));
+  const [downloaded, setDownloaded] = useState<Set<string>>(new Set());
+  const meta = language ? LANGUAGES[language] : null;
+
+  // Which episodes already have their audio on the device, so the shelf can
+  // say so — a downloaded one plays instantly and offline.
+  useEffect(() => {
+    let active = true;
+    void listBuiltEpisodeIds()
+      .then((ids) => {
+        if (active) setDownloaded(new Set(ids));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [shelf.episodes]);
 
   return (
     <div className="px-5">
       <Header title="Podcast" />
-      <div className="rounded-3xl bg-white p-6 shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-          Today's episode · {meta.flag} {meta.name}
-        </p>
-        <p className="mt-2 text-2xl font-bold leading-snug text-slate-800">
-          {topic?.en ?? 'Today'}
-        </p>
-        <p className="mt-1 text-sm text-slate-500">
-          A short listening episode at your level. A few new words come back again and again, so
-          they stick without a vocabulary list.
-        </p>
+      <p className="pb-4 text-sm text-slate-500">
+        Short {meta?.name} episodes at your level. A few new words come back again and again, so
+        they stick without a vocabulary list.
+      </p>
 
-        {status === 'loading' ? (
-          <div className="mt-5">
-            <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-sage-500" />
-              Writing today's episode…
-            </p>
-            <div className="mt-3 space-y-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-3 animate-pulse rounded-full bg-cream-100" />
-              ))}
+      <ul className="space-y-2">
+        {shelf.episodes.map((episode) => (
+          <li key={episode.id}>
+            <div className="flex items-center gap-1 rounded-3xl bg-white pr-2 shadow-sm">
+              <button
+                onClick={() => onOpen(episode.id)}
+                className="min-w-0 flex-1 rounded-3xl px-4 py-3.5 text-left active:bg-cream-100"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-sage-100 px-2 py-0.5 text-xs font-bold text-sage-700">
+                    {episode.level}
+                  </span>
+                  {!isBuiltIn(episode) && (
+                    <span className="text-xs font-semibold text-slate-400">Yours</span>
+                  )}
+                  {downloaded.has(episode.id) && (
+                    <span className="text-xs font-semibold text-sage-600">Downloaded</span>
+                  )}
+                </div>
+                <p className="mt-1 truncate font-bold text-slate-800">{episode.title}</p>
+                <p className="truncate text-xs text-slate-400">
+                  {episode.topicEn} · about {estimateMinutes(episode.lines.length)} min ·{' '}
+                  {episode.lines.length} sentences
+                </p>
+              </button>
+              {!isBuiltIn(episode) && (
+                <button
+                  onClick={() => shelf.remove(episode.id)}
+                  className="shrink-0 rounded-full p-2 text-slate-300 active:bg-cream-100 active:text-blush-500"
+                  aria-label={`Delete ${episode.title}`}
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              )}
             </div>
-          </div>
-        ) : (
-          <Button onClick={load} className="mt-5 w-full">
-            <HeadphonesIcon className="h-5 w-5" />
-            {cached ? "Open today's episode" : "Start today's episode"}
-          </Button>
-        )}
+          </li>
+        ))}
+      </ul>
 
-        {status === 'error' && error && <p className="mt-3 text-sm text-blush-600">{error}</p>}
-        {status !== 'loading' && !cached && (
-          <p className="mt-2 text-center text-xs text-slate-400">
-            Written once, then saved on this device.
-          </p>
+      <div className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
+        {hasGeminiKey ? (
+          <>
+            <p className="text-sm font-semibold text-slate-700">Want a different subject?</p>
+            <p className="mt-1 text-xs text-slate-400">
+              A new episode is written for your level on a topic that isn't on your shelf yet, and
+              then it stays there.
+            </p>
+            <Button onClick={shelf.write} disabled={shelf.writing} className="mt-4 w-full">
+              {shelf.writing ? (
+                <>
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                  Writing a new episode…
+                </>
+              ) : (
+                <>
+                  <HeadphonesIcon className="h-5 w-5" />
+                  Write a new episode
+                </>
+              )}
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-slate-700">Want more episodes?</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Add your free Gemini API key in Settings and new episodes can be written for you on
+              any topic — that's also what records the audio.
+            </p>
+          </>
         )}
+        {shelf.error && <p className="mt-3 text-sm text-blush-600">{shelf.error}</p>}
       </div>
     </div>
   );
 }
 
-function EpisodePlayer({ episode }: { episode: PodcastEpisode }) {
+function EpisodePlayer({ episode, onBack }: { episode: PodcastEpisode; onBack: () => void }) {
   const audio = useEpisodeAudio(episode);
   const player = usePodcastPlayer(episode, audio.url, audio.timeline);
   const savedVocab = useAppStore((state) => state.savedVocab);
@@ -129,21 +191,34 @@ function EpisodePlayer({ episode }: { episode: PodcastEpisode }) {
 
   return (
     <div className="px-5">
-      <Header title="Podcast" />
+      {/* Pinned: the way back and the current line both stay reachable
+          however far down the transcript the listener has scrolled. */}
+      <div className="sticky top-0 z-10 -mx-5 border-b border-cream-200 bg-cream-50/95 px-5 pb-3 backdrop-blur">
+        <div className="flex items-center gap-1 pt-3">
+          <button
+            onClick={onBack}
+            className="rounded-full p-2 text-slate-400 active:bg-cream-100"
+            aria-label="All episodes"
+          >
+            <BackIcon className="h-5 w-5" />
+          </button>
+          <span className="text-sm font-semibold text-slate-400">All episodes</span>
+        </div>
 
-      {audio.status === 'ready' ? (
-        <NowPlayingBar
-          line={current}
-          currentTime={player.currentTime}
-          duration={player.duration}
-          playing={player.playing}
-          onToggle={player.toggle}
-          onSeekTime={player.seekToTime}
-          onSkip={player.skip}
-        />
-      ) : (
-        <AudioSetup episode={episode} audio={audio} />
-      )}
+        {audio.status === 'ready' ? (
+          <NowPlayingBar
+            line={current}
+            currentTime={player.currentTime}
+            duration={player.duration}
+            playing={player.playing}
+            onToggle={player.toggle}
+            onSeekTime={player.seekToTime}
+            onSkip={player.skip}
+          />
+        ) : (
+          <AudioSetup episode={episode} audio={audio} />
+        )}
+      </div>
 
       <div className="pt-3">
         <p className="text-lg font-bold text-slate-800">{episode.title}</p>
@@ -210,9 +285,11 @@ function EpisodePlayer({ episode }: { episode: PodcastEpisode }) {
 }
 
 /**
- * The one-time step that turns a script into a continuous track. Shown in
- * place of the transport until the audio exists; the transcript below stays
- * readable throughout, so the episode is useful even before it can be heard.
+ * What the top of the screen shows until the track exists. The download
+ * starts on its own, so this is progress rather than a prompt — it only
+ * becomes a button when something went wrong or there is no key to record
+ * with. The transcript below stays readable throughout, so an episode is
+ * useful to read even before it can be heard.
  */
 function AudioSetup({
   episode,
@@ -221,49 +298,58 @@ function AudioSetup({
   episode: PodcastEpisode;
   audio: ReturnType<typeof useEpisodeAudio>;
 }) {
+  const hasGeminiKey = useAppStore((state) => Boolean(state.geminiApiKey));
   const percent = audio.progress
     ? Math.round((audio.progress.done / Math.max(audio.progress.total, 1)) * 100)
     : 0;
 
+  if (audio.status === 'building' || audio.status === 'checking') {
+    return (
+      <div className="rounded-3xl bg-white p-5 shadow-sm">
+        <p className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-sage-500" />
+          {audio.status === 'checking'
+            ? 'Looking for the audio…'
+            : `Downloading the episode… ${audio.progress?.done ?? 0}/${audio.progress?.total ?? '?'}`}
+        </p>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sage-100">
+          <div
+            className="h-full rounded-full bg-sage-500 transition-all duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs text-slate-400">
+          Once only — after this it plays instantly, offline, and keeps going with the screen
+          locked. You can start reading now.
+        </p>
+      </div>
+    );
+  }
+
+  if (!hasGeminiKey) {
+    return (
+      <div className="rounded-3xl bg-white p-5 shadow-sm">
+        <p className="text-sm font-semibold text-slate-700">Read-only for now</p>
+        <p className="mt-1 text-xs text-slate-400">
+          The transcript and its translation are below. Add your free Gemini API key in Settings to
+          hear the episode read aloud.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm">
-      {audio.status === 'building' ? (
-        <>
-          <p className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-sage-500" />
-            Recording the episode… {audio.progress?.done ?? 0}/{audio.progress?.total ?? '?'}
-          </p>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sage-100">
-            <div
-              className="h-full rounded-full bg-sage-500 transition-all duration-300"
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-          <p className="mt-2 text-xs text-slate-400">
-            Done once — after this it plays instantly, offline, and keeps going with the screen
-            locked.
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-sm font-semibold text-slate-700">
-            {audio.status === 'error' ? 'Recording stopped' : 'Ready to record the audio'}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
-            {episode.lines.length} sentences · about {audio.chunkTotal} short requests, then it's
-            saved on this device for good.
-          </p>
-          <Button
-            onClick={audio.build}
-            disabled={audio.status === 'checking'}
-            className="mt-4 w-full"
-          >
-            <HeadphonesIcon className="h-5 w-5" />
-            {audio.status === 'error' ? 'Resume recording' : 'Record the audio'}
-          </Button>
-          {audio.error && <p className="mt-2 text-sm text-blush-600">{audio.error}</p>}
-        </>
-      )}
+      <p className="text-sm font-semibold text-slate-700">Download stopped</p>
+      <p className="mt-1 text-xs text-slate-400">
+        {episode.lines.length} sentences · about {audio.chunkTotal} short requests. Whatever was
+        already recorded is kept, so this carries on where it stopped.
+      </p>
+      <Button onClick={audio.build} className="mt-4 w-full">
+        <HeadphonesIcon className="h-5 w-5" />
+        Resume download
+      </Button>
+      {audio.error && <p className="mt-2 text-sm text-blush-600">{audio.error}</p>}
     </div>
   );
 }

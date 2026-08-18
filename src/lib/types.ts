@@ -47,18 +47,22 @@ export interface PodcastVocab {
   en: string;
 }
 
-/** A generated listening episode: one topic, one day, one level. */
+/** One listening episode: a single topic at a single level. */
 export interface PodcastEpisode {
-  /** `${language}-${level}-${dateISO}` — also the cache key. */
+  /** Stable cache key. Built-in episodes use a fixed slug. */
   id: string;
   title: string;
-  /** English name of the topic, for the idle card. */
+  /** English name of the topic, for the shelf card. */
   topicEn: string;
   language: Language;
   level: Level;
-  dateISO: string;
   lines: PodcastLine[];
   vocab: PodcastVocab[];
+  /**
+   * When an AI-written episode was generated. Absent on the built-in
+   * episodes, which is also what marks them as built-in.
+   */
+  createdISO?: string;
 }
 
 /** A word the learner tapped to study later. */

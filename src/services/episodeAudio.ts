@@ -24,8 +24,13 @@ const CHUNK_CHAR_BUDGET = 700;
 const CHUNK_MAX_LINES = 10;
 /** Breathing room between chunks so the joins don't sound clipped. */
 const GAP_MS = 250;
-/** Episodes whose audio is kept on the device; older ones are evicted. */
-const KEEP_EPISODES = 3;
+/**
+ * Episodes whose audio is kept on the device. The shelf holds more than
+ * this, so eviction is by least recently played rather than oldest built:
+ * the ones actually being listened to are the ones that survive. Each
+ * episode is roughly 10–15 MB of PCM, so this is tens of megabytes.
+ */
+const KEEP_EPISODES = 6;
 
 const DB_NAME = 'daily-phrase-episode-audio';
 const CHUNKS = 'chunks';
@@ -43,6 +48,8 @@ interface TrackRecord {
   sampleRate: number;
   chunkCount: number;
   builtAt: number;
+  /** Touched every time the track is loaded, so eviction spares favourites. */
+  playedAt?: number;
 }
 
 interface ChunkRecord {
@@ -181,6 +188,14 @@ function assemble(
   };
 }
 
+/** Episode ids that already have a complete stored track, for the shelf. */
+export async function listBuiltEpisodeIds(): Promise<string[]> {
+  const tracks = await withStore(TRACKS, 'readonly', (store) =>
+    request<TrackRecord[]>(store, (s) => s.getAll()),
+  ).catch(() => [] as TrackRecord[]);
+  return tracks.map((track) => track.episodeId);
+}
+
 /** Cached audio for an episode, or null when it hasn't been built yet. */
 export async function loadEpisodeAudio(episode: PodcastEpisode): Promise<EpisodeAudio | null> {
   const track = await withStore(TRACKS, 'readonly', (store) =>
@@ -199,10 +214,16 @@ export async function loadEpisodeAudio(episode: PodcastEpisode): Promise<Episode
     if (!record) return null; // evicted or incomplete
     pieces.push(new Uint8Array(record.buffer));
   }
+
+  // Mark it as in use so a later build evicts something else.
+  await withStore(TRACKS, 'readwrite', (store) =>
+    request(store, (s) => s.put({ ...track, playedAt: Date.now() }, episode.id)),
+  ).catch(() => {});
+
   return assemble(episode, chunks, pieces, track.sampleRate);
 }
 
-/** Delete audio for all but the most recently built episodes. */
+/** Delete audio for the least recently played episodes beyond the limit. */
 async function evictOldEpisodes(keepId: string): Promise<void> {
   const tracks = await withStore(TRACKS, 'readonly', (store) =>
     request<TrackRecord[]>(store, (s) => s.getAll()),
@@ -210,7 +231,7 @@ async function evictOldEpisodes(keepId: string): Promise<void> {
 
   const stale = tracks
     .filter((track) => track.episodeId !== keepId)
-    .sort((a, b) => b.builtAt - a.builtAt)
+    .sort((a, b) => (b.playedAt ?? b.builtAt) - (a.playedAt ?? a.builtAt))
     .slice(KEEP_EPISODES - 1);
 
   for (const track of stale) {

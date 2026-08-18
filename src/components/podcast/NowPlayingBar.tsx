@@ -18,9 +18,9 @@ function formatTime(seconds: number): string {
 }
 
 /**
- * Sticks to the top while the transcript scrolls, so the sentence being
- * spoken — and its translation — is always readable without chasing the
- * highlight. Also the transport: scrub anywhere, or skip 10s.
+ * The sentence being spoken and its translation, plus the transport: scrub
+ * anywhere, or skip 10s. Rendered inside the screen's pinned header, so the
+ * current line stays readable while the transcript scrolls past it.
  */
 export function NowPlayingBar({
   line,
@@ -32,7 +32,7 @@ export function NowPlayingBar({
   onSkip,
 }: NowPlayingBarProps) {
   return (
-    <div className="sticky top-0 z-10 -mx-5 border-b border-cream-200 bg-cream-50/95 px-5 pb-3 pt-2 backdrop-blur">
+    <div className="pb-1 pt-1">
       <p className="min-h-[3.5rem] text-lg font-bold leading-snug text-slate-800">{line?.de}</p>
       <p className="mt-0.5 text-sm text-slate-500">{line?.en}</p>
 

@@ -1,14 +1,11 @@
 /**
- * The daily podcast topic. A fixed pool picked deterministically from the
- * date, so every day brings a different subject and the same day always
- * resolves to the same one (no reshuffling on reload).
+ * The pool of subjects a written episode can be about. Episodes are no
+ * longer tied to the calendar, so a new one takes a topic the learner's
+ * shelf does not cover yet (see `nextTopic` in services/podcast.ts).
  */
 
-import { dailyPhraseIndex } from './dailyIndex';
-import type { Language, Level } from './types';
-
 export interface Topic {
-  /** English label, shown on the idle card and fed to the generator. */
+  /** English label, shown on the shelf card and fed to the generator. */
   en: string;
   /** A nudge for the generator about what to cover. */
   angle: string;
@@ -57,7 +54,3 @@ export const TOPICS: Topic[] = [
   { en: 'Bureaucracy', angle: 'forms, appointments, registration and waiting' },
 ];
 
-/** Today's topic for this learner — stable per date + language + level. */
-export function topicForDate(dateISO: string, language: Language, level: Level): Topic {
-  return TOPICS[dailyPhraseIndex(dateISO, `podcast:${language}:${level}`, TOPICS.length)];
-}
