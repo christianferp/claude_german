@@ -62,7 +62,20 @@ interface GeminiTextOptions {
   /** Ask for a JSON object back (sets responseMimeType). */
   json?: boolean;
   temperature?: number;
+  /**
+   * Output budget. Worth setting generously for long replies: on thinking
+   * models the reasoning tokens are drawn from the same budget, so a modest
+   * cap can end the response before any text is produced.
+   */
+  maxOutputTokens?: number;
   signal?: AbortSignal;
+}
+
+/** Thrown when the model stopped before finishing (usually the token cap). */
+export class GeminiTruncatedError extends GeminiError {
+  constructor(reason: string) {
+    super('other', `The model stopped early (${reason}).`);
+  }
 }
 
 /**
@@ -77,50 +90,79 @@ interface GeminiTextOptions {
 export async function callGeminiText(
   apiKey: string,
   parts: GeminiPart[],
-  { json = false, temperature, signal }: GeminiTextOptions = {},
+  { json = false, temperature, maxOutputTokens, signal }: GeminiTextOptions = {},
 ): Promise<string> {
-  const generationConfig: Record<string, unknown> = {};
-  if (temperature !== undefined) generationConfig.temperature = temperature;
-  if (json) generationConfig.responseMimeType = 'application/json';
+  const fullConfig: Record<string, unknown> = {};
+  if (temperature !== undefined) fullConfig.temperature = temperature;
+  if (json) fullConfig.responseMimeType = 'application/json';
+  if (maxOutputTokens !== undefined) fullConfig.maxOutputTokens = maxOutputTokens;
+
+  // Generation options are the most version-sensitive part of the request, so
+  // keep a plain fallback: some models reject responseMimeType (or an
+  // unexpected field) with a 400 that has nothing to do with the prompt.
+  const configs: Record<string, unknown>[] =
+    Object.keys(fullConfig).length > 0
+      ? [fullConfig, temperature !== undefined ? { temperature } : {}]
+      : [{}];
 
   let response: Response | null = null;
-  while (textModelIndex < TEXT_MODEL_CANDIDATES.length) {
-    const model = TEXT_MODEL_CANDIDATES[textModelIndex];
-    try {
-      response = await fetch(`${GEMINI_BASE_URL}/models/${model}:generateContent`, {
-        method: 'POST',
-        signal,
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({ contents: [{ parts }], generationConfig }),
-      });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') throw err;
-      throw new GeminiError('network', 'Could not reach Gemini.');
-    }
-    // A 404 means this model name no longer exists — quietly try the next.
-    if (response.status !== 404) break;
-    textModelIndex++;
-    response = null;
-  }
-  if (!response) throw new GeminiError('other', 'No available Gemini text model.');
+  let lastDetail = '';
 
-  if (!response.ok) {
+  for (const generationConfig of configs) {
+    response = null;
+    while (textModelIndex < TEXT_MODEL_CANDIDATES.length) {
+      const model = TEXT_MODEL_CANDIDATES[textModelIndex];
+      try {
+        response = await fetch(`${GEMINI_BASE_URL}/models/${model}:generateContent`, {
+          method: 'POST',
+          signal,
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: JSON.stringify({ contents: [{ parts }], generationConfig }),
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') throw err;
+        throw new GeminiError('network', 'Could not reach Gemini.');
+      }
+      // A 404 means this model name no longer exists — quietly try the next.
+      if (response.status !== 404) break;
+      textModelIndex++;
+      response = null;
+    }
+    if (!response) throw new GeminiError('other', 'No available Gemini text model.');
+    if (response.ok) break;
+
     const body = await response.text().catch(() => '');
-    const detail = /"message"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? '';
+    lastDetail = /"message"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? '';
     if (response.status === 429) throw new GeminiError('quota', 'Quota exhausted.');
-    if ([401, 403].includes(response.status) || (response.status === 400 && /api key/i.test(detail))) {
+    if ([401, 403].includes(response.status) || (response.status === 400 && /api key/i.test(lastDetail))) {
       throw new GeminiError('auth', `Key rejected (HTTP ${response.status}).`);
     }
-    throw new GeminiError('other', `HTTP ${response.status}${detail ? ` — ${detail}` : ''}`);
+    // Only a rejected config is worth retrying; anything else is terminal.
+    if (response.status !== 400) {
+      throw new GeminiError('other', `HTTP ${response.status}${lastDetail ? ` — ${lastDetail}` : ''}`);
+    }
+    console.warn(`Gemini: config rejected (${lastDetail || 'HTTP 400'}) — retrying simpler`);
+  }
+
+  if (!response || !response.ok) {
+    throw new GeminiError('other', `HTTP 400${lastDetail ? ` — ${lastDetail}` : ''}`);
   }
 
   const payload = (await response.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
   };
-  return (payload.candidates?.[0]?.content?.parts ?? [])
+  const candidate = payload.candidates?.[0];
+  const text = (candidate?.content?.parts ?? [])
     .map((part) => part.text ?? '')
     .join('')
     .trim();
+
+  // A truncated reply is worth naming: it looks like a broken response
+  // otherwise, and the fix (a bigger budget or a shorter ask) is different.
+  if (!text && candidate?.finishReason && candidate.finishReason !== 'STOP') {
+    throw new GeminiTruncatedError(candidate.finishReason);
+  }
+  return text;
 }
 
 export type KeyVerification = 'unchecked' | 'checking' | 'valid' | 'invalid' | 'network-error';

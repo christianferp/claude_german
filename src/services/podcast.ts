@@ -15,8 +15,13 @@ import { useAppStore } from '../store/useAppStore';
 import { episodeStorage } from './episodeStorage';
 import { callGeminiText, GeminiError } from './gemini';
 
-/** Short sentences keep it listenable; this lands around 5–8 minutes. */
-const TARGET_SENTENCES = '80 to 110';
+/**
+ * Short sentences keep it listenable; this lands around 4–6 minutes. Kept
+ * well under the 10-minute ceiling on purpose: the whole script plus its
+ * translations has to come back in one response, and asking for more made
+ * the model run out of output budget before finishing.
+ */
+const TARGET_SENTENCES = '55 to 75';
 const TARGET_VOCAB = '8 to 12';
 /** Each new word must recur at least this often to actually sink in. */
 const MIN_REPEATS = 3;
@@ -103,12 +108,17 @@ async function generateEpisode(
     text = await callGeminiText(apiKey, [{ text: buildPrompt(languageName, level, topic) }], {
       json: true,
       temperature: 1,
+      // The full script plus translations is a long reply, and on thinking
+      // models the reasoning shares this budget — leave plenty of room.
+      maxOutputTokens: 16384,
       signal,
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    // Keep the underlying message: the UI shows it, so a failure is
+    // diagnosable instead of a dead end.
     if (err instanceof GeminiError) throw new PodcastError(err.kind, err.message);
-    throw new PodcastError('other', 'Could not write the episode.');
+    throw new PodcastError('other', err instanceof Error ? err.message : 'Unknown error.');
   }
 
   const raw = parseEpisodeJson(text);

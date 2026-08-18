@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { Button } from '../components/Button';
 import { Header } from '../components/Header';
 import { NowPlayingBar } from '../components/podcast/NowPlayingBar';
 import { TranscriptLine } from '../components/podcast/TranscriptLine';
 import { HeadphonesIcon } from '../components/icons';
+import { useEpisodeAudio } from '../hooks/useEpisodeAudio';
 import { usePodcastEpisode } from '../hooks/usePodcastEpisode';
 import { usePodcastPlayer } from '../hooks/usePodcastPlayer';
 import { LANGUAGES } from '../lib/languages';
@@ -96,21 +97,11 @@ export function PodcastScreen() {
 }
 
 function EpisodePlayer({ episode }: { episode: PodcastEpisode }) {
-  const player = usePodcastPlayer(episode);
+  const audio = useEpisodeAudio(episode);
+  const player = usePodcastPlayer(episode, audio.url, audio.timeline);
   const savedVocab = useAppStore((state) => state.savedVocab);
   const saveVocab = useAppStore((state) => state.saveVocab);
   const removeVocab = useAppStore((state) => state.removeVocab);
-
-  // Opening an episode is always a deliberate tap, so start speaking right
-  // away rather than making the user hunt for play. Runs once per episode;
-  // the player bails out on its own if no audio reaches the speaker.
-  const { play } = player;
-  const started = useRef<string | null>(null);
-  useEffect(() => {
-    if (started.current === episode.id) return;
-    started.current = episode.id;
-    play();
-  }, [episode.id, play]);
 
   const savedWords = useMemo(() => new Set(Object.keys(savedVocab)), [savedVocab]);
 
@@ -140,16 +131,18 @@ function EpisodePlayer({ episode }: { episode: PodcastEpisode }) {
     <div className="px-5">
       <Header title="Podcast" />
 
-      {current && (
+      {audio.status === 'ready' ? (
         <NowPlayingBar
           line={current}
-          position={player.index}
-          total={episode.lines.length}
+          currentTime={player.currentTime}
+          duration={player.duration}
           playing={player.playing}
           onToggle={player.toggle}
-          onPrev={player.prev}
-          onNext={player.next}
+          onSeekTime={player.seekToTime}
+          onSkip={player.skip}
         />
+      ) : (
+        <AudioSetup episode={episode} audio={audio} />
       )}
 
       <div className="pt-3">
@@ -166,10 +159,10 @@ function EpisodePlayer({ episode }: { episode: PodcastEpisode }) {
             key={i}
             line={line}
             index={i}
-            active={i === player.index}
+            active={audio.status === 'ready' && i === player.index}
             savedWords={savedWords}
             onWordTap={toggleWord}
-            onSeek={player.seekTo}
+            onSeek={audio.status === 'ready' ? player.seekToLine : undefined}
           />
         ))}
       </ul>
@@ -211,6 +204,65 @@ function EpisodePlayer({ episode }: { episode: PodcastEpisode }) {
         <Button variant="secondary" onClick={player.restart} className="mt-4 w-full">
           Play again from the start
         </Button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The one-time step that turns a script into a continuous track. Shown in
+ * place of the transport until the audio exists; the transcript below stays
+ * readable throughout, so the episode is useful even before it can be heard.
+ */
+function AudioSetup({
+  episode,
+  audio,
+}: {
+  episode: PodcastEpisode;
+  audio: ReturnType<typeof useEpisodeAudio>;
+}) {
+  const percent = audio.progress
+    ? Math.round((audio.progress.done / Math.max(audio.progress.total, 1)) * 100)
+    : 0;
+
+  return (
+    <div className="rounded-3xl bg-white p-5 shadow-sm">
+      {audio.status === 'building' ? (
+        <>
+          <p className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-sage-500" />
+            Recording the episode… {audio.progress?.done ?? 0}/{audio.progress?.total ?? '?'}
+          </p>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sage-100">
+            <div
+              className="h-full rounded-full bg-sage-500 transition-all duration-300"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-slate-400">
+            Done once — after this it plays instantly, offline, and keeps going with the screen
+            locked.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-sm font-semibold text-slate-700">
+            {audio.status === 'error' ? 'Recording stopped' : 'Ready to record the audio'}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {episode.lines.length} sentences · about {audio.chunkTotal} short requests, then it's
+            saved on this device for good.
+          </p>
+          <Button
+            onClick={audio.build}
+            disabled={audio.status === 'checking'}
+            className="mt-4 w-full"
+          >
+            <HeadphonesIcon className="h-5 w-5" />
+            {audio.status === 'error' ? 'Resume recording' : 'Record the audio'}
+          </Button>
+          {audio.error && <p className="mt-2 text-sm text-blush-600">{audio.error}</p>}
+        </>
       )}
     </div>
   );

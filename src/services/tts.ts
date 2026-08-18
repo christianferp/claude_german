@@ -254,6 +254,86 @@ function createGeminiTts(getApiKey: () => string, getModel: () => string): Gemin
   };
 }
 
+// ── Raw synthesis (for stitching a continuous track) ───────────────────────
+
+export type TtsErrorKind = 'no-key' | 'auth' | 'quota' | 'network' | 'other';
+
+export class TtsError extends Error {
+  kind: TtsErrorKind;
+  constructor(kind: TtsErrorKind, message: string) {
+    super(message);
+    this.kind = kind;
+  }
+}
+
+export interface RawSpeech {
+  /** 16-bit little-endian mono samples. */
+  pcm: Uint8Array;
+  sampleRate: number;
+}
+
+/**
+ * One TTS request returning raw PCM rather than a playable blob, so callers
+ * can concatenate many pieces into a single gapless track and know exactly
+ * how long each piece is. Used to build podcast episodes.
+ */
+export async function synthesizeSpeechPcm(
+  text: string,
+  lang: string,
+  signal?: AbortSignal,
+): Promise<RawSpeech> {
+  const apiKey = useAppStore.getState().geminiApiKey;
+  if (!apiKey) throw new TtsError('no-key', 'No Gemini API key.');
+  const model = useAppStore.getState().geminiTtsModel;
+
+  const languageName = LANGUAGE_NAMES[lang.slice(0, 2).toLowerCase()];
+  const prompt = languageName
+    ? `Read this ${languageName} podcast passage aloud in a warm, friendly presenter voice, at a calm natural pace with short pauses between sentences:\n\n${text}`
+    : `Read this podcast passage aloud in a warm, friendly voice at a calm natural pace:\n\n${text}`;
+
+  let response: Response;
+  try {
+    response = await fetch(`${GEMINI_BASE_URL}/models/${model}:generateContent`, {
+      method: 'POST',
+      signal,
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: GEMINI_TTS_VOICE } },
+          },
+        },
+      }),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    throw new TtsError('network', 'Could not reach Gemini.');
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    const detail = /"message"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? '';
+    if (response.status === 429) throw new TtsError('quota', 'Quota exhausted.');
+    if ([401, 403].includes(response.status)) {
+      throw new TtsError('auth', `Key rejected (HTTP ${response.status}).`);
+    }
+    throw new TtsError('other', `HTTP ${response.status}${detail ? ` — ${detail}` : ''}`);
+  }
+
+  const payload = (await response.json()) as {
+    candidates?: { content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] } }[];
+  };
+  const inline = payload.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)?.inlineData;
+  if (!inline?.data) throw new TtsError('other', 'Response contained no audio.');
+
+  return {
+    pcm: base64ToBytes(inline.data),
+    sampleRate: Number(/rate=(\d+)/.exec(inline.mimeType ?? '')?.[1] ?? 24000),
+  };
+}
+
 // ── Dispatcher ─────────────────────────────────────────────────────────────
 
 const getGeminiKey = () => useAppStore.getState().geminiApiKey;

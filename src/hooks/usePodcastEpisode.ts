@@ -86,9 +86,14 @@ export function usePodcastEpisode(): UsePodcastEpisode {
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(
-          err instanceof PodcastError ? ERROR_MESSAGES[err.kind] : ERROR_MESSAGES.other,
-        );
+        // Show the underlying reason for the vague kinds — a bare "try
+        // again" gives neither the user nor us anything to act on.
+        const kind = err instanceof PodcastError ? err.kind : 'other';
+        const detail =
+          err instanceof PodcastError && (kind === 'other' || kind === 'malformed')
+            ? ` (${err.message})`
+            : '';
+        setError(`${ERROR_MESSAGES[kind]}${detail}`);
         setStatus('error');
       });
   }, [language, level]);
