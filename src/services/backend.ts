@@ -12,7 +12,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { isBackendConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from '../config';
 import type { RecallRecord } from '../lib/recall';
 import { mergeDailyStreak } from '../lib/streak';
-import type { Language, Level, MasteredEntry } from '../lib/types';
+import type { Language, Level, MasteredEntry, VocabEntry } from '../lib/types';
 import { useAppStore } from '../store/useAppStore';
 import { audioStorage } from './audioStorage';
 
@@ -223,8 +223,10 @@ export async function syncNow(): Promise<void> {
       user_id: userId,
       language: store.language,
       levels: store.levels,
-      // Absent until migration-4-streak.sql adds the column — harmless either way.
+      // Absent until migration-4-streak.sql / migration-5-vocab.sql add the
+      // columns — harmless either way.
       streak: store.dailyStreak,
+      vocab: store.savedVocab,
       updated_at: new Date().toISOString(),
     });
   }
@@ -233,6 +235,11 @@ export async function syncNow(): Promise<void> {
   if (stateRow?.streak) {
     const merged = mergeDailyStreak(store.dailyStreak, stateRow.streak);
     if (merged !== store.dailyStreak) store.setDailyStreak(merged);
+  }
+
+  // Saved words are additive — union both sides, local wins on conflicts.
+  if (stateRow?.vocab && Object.keys(stateRow.vocab).length > 0) {
+    store.mergeVocab(stateRow.vocab as Record<string, VocabEntry>);
   }
 }
 

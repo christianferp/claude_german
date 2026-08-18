@@ -131,6 +131,16 @@ export function ShuffleIcon({ className = 'h-5 w-5' }: IconProps) {
   );
 }
 
+export function HeadphonesIcon({ className = 'h-6 w-6' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+      <rect x="2" y="14" width="5" height="7" rx="2" fill="currentColor" stroke="none" />
+      <rect x="17" y="14" width="5" height="7" rx="2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function TargetIcon({ className = 'h-6 w-6' }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
