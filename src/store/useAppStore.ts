@@ -50,6 +50,8 @@ interface AppState {
   dailyStreak: DailyStreak;
   /** Words tapped in a podcast transcript to study later, keyed by normalized word. */
   savedVocab: Record<string, VocabEntry>;
+  /** Episode last opened, so the Podcast tab reopens where the listener was. */
+  lastEpisodeId: string | null;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
@@ -101,6 +103,8 @@ interface AppState {
   removeVocab: (word: string) => void;
   /** Adopt saved words pulled from the backend. */
   mergeVocab: (entries: Record<string, VocabEntry>) => void;
+  /** Remember (or clear, with null) the episode being listened to. */
+  setLastEpisodeId: (id: string | null) => void;
   setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
@@ -122,6 +126,7 @@ export const useAppStore = create<AppState>()(
       recallDone: null,
       dailyStreak: INITIAL_STREAK,
       savedVocab: {},
+      lastEpisodeId: null,
       view: 'today',
       settingsOpen: false,
       memorizePhraseId: null,
@@ -215,6 +220,7 @@ export const useAppStore = create<AppState>()(
         }),
       mergeVocab: (entries) =>
         set((state) => ({ savedVocab: { ...entries, ...state.savedVocab } })),
+      setLastEpisodeId: (lastEpisodeId) => set({ lastEpisodeId }),
       setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
@@ -241,6 +247,7 @@ export const useAppStore = create<AppState>()(
         recallDone: state.recallDone,
         dailyStreak: state.dailyStreak,
         savedVocab: state.savedVocab,
+        lastEpisodeId: state.lastEpisodeId,
       }),
     },
   ),

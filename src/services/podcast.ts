@@ -1,15 +1,16 @@
 /**
- * Daily listening episodes: a short podcast script generated for the
- * learner's language and CEFR level on the day's topic.
+ * Writing a new listening episode: a short podcast script for the learner's
+ * language and CEFR level on a topic they have not had yet.
  *
  * The pedagogical core is repetition — a small set of new words is woven
  * through the script several times each, so they stick from context rather
- * than from a list. Episodes are generated once and cached forever.
+ * than from a list. Nothing here runs on its own: the shelf already has the
+ * built-in episodes, so a generation only happens when the learner asks for
+ * one. What comes back is stored and stays on the shelf for good.
  */
 
-import { localDateISO } from '../lib/dailyIndex';
 import { LANGUAGES } from '../lib/languages';
-import { topicForDate, type Topic } from '../lib/topics';
+import { TOPICS, type Topic } from '../lib/topics';
 import type { Language, Level, PodcastEpisode } from '../lib/types';
 import { useAppStore } from '../store/useAppStore';
 import { episodeStorage } from './episodeStorage';
@@ -36,8 +37,23 @@ export class PodcastError extends Error {
   }
 }
 
-export function episodeId(language: Language, level: Level, dateISO: string): string {
-  return `${language}-${level}-${dateISO}`;
+/**
+ * Unique per episode rather than per day: the shelf holds as many as the
+ * learner cares to write, and each keeps its own stored audio.
+ */
+function newEpisodeId(language: Language, level: Level, createdISO: string): string {
+  return `written-${language}-${level}-${createdISO.replace(/[^0-9A-Za-z]/g, '')}`;
+}
+
+/**
+ * A topic the shelf does not already cover, so a new episode is actually
+ * new. Falls back to a random one once every topic has been used.
+ */
+export function nextTopic(covered: string[]): Topic {
+  const used = new Set(covered.map((name) => name.trim().toLowerCase()));
+  const fresh = TOPICS.filter((topic) => !used.has(topic.en.toLowerCase()));
+  const pool = fresh.length > 0 ? fresh : TOPICS;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function buildPrompt(languageName: string, level: Level, topic: Topic): string {
@@ -90,17 +106,21 @@ function parseEpisodeJson(text: string): RawEpisode {
   }
 }
 
-/** Generate today's episode. Callers should prefer `getEpisode`, which caches. */
-async function generateEpisode(
+/**
+ * Write a brand new episode and keep it. `covered` is the topics already on
+ * the learner's shelf, so each new episode brings a subject they have not
+ * heard yet.
+ */
+export async function writeEpisode(
   language: Language,
   level: Level,
-  dateISO: string,
+  covered: string[],
   signal?: AbortSignal,
 ): Promise<PodcastEpisode> {
   const apiKey = useAppStore.getState().geminiApiKey;
   if (!apiKey) throw new PodcastError('no-key', 'A Gemini API key is required.');
 
-  const topic = topicForDate(dateISO, language, level);
+  const topic = nextTopic(covered);
   const languageName = LANGUAGES[language].name;
 
   let text: string;
@@ -145,44 +165,20 @@ async function generateEpisode(
     );
   }
 
-  return {
-    id: episodeId(language, level, dateISO),
+  const createdISO = new Date().toISOString();
+  const episode: PodcastEpisode = {
+    id: newEpisodeId(language, level, createdISO),
     title: (raw.title ?? topic.en).trim(),
     topicEn: (raw.topicEn ?? topic.en).trim(),
     language,
     level,
-    dateISO,
     lines,
     vocab,
+    createdISO,
   };
-}
 
-/**
- * Today's episode: from the local cache when it exists, otherwise generated
- * and cached. Only called on an explicit tap, so merely opening the tab
- * never spends generation quota.
- */
-export async function getEpisode(
-  language: Language,
-  level: Level,
-  signal?: AbortSignal,
-): Promise<PodcastEpisode> {
-  const dateISO = localDateISO();
-  const id = episodeId(language, level, dateISO);
-
-  const cached = await episodeStorage.get(id).catch(() => null);
-  if (cached) return cached;
-
-  const episode = await generateEpisode(language, level, dateISO, signal);
   await episodeStorage.save(episode).catch(() => {
-    /* cache is best-effort — a fresh episode still plays */
+    /* storing is best effort — the episode still plays this session */
   });
   return episode;
-}
-
-/** Whether today's episode is already cached (no generation needed to play). */
-export async function hasCachedEpisode(language: Language, level: Level): Promise<boolean> {
-  const id = episodeId(language, level, localDateISO());
-  const cached = await episodeStorage.get(id).catch(() => null);
-  return cached !== null;
 }

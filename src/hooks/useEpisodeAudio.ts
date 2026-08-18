@@ -9,6 +9,7 @@ import {
   type EpisodeTimeline,
 } from '../services/episodeAudio';
 import type { TtsErrorKind } from '../services/tts';
+import { useAppStore } from '../store/useAppStore';
 
 const ERROR_MESSAGES: Record<TtsErrorKind, string> = {
   'no-key': 'Add your Gemini API key in Settings to build the audio.',
@@ -34,9 +35,16 @@ export interface UseEpisodeAudio {
 
 /**
  * The episode's single continuous audio track: loaded from the device when
- * it was built before, otherwise synthesized on request with progress.
+ * it was built before, otherwise downloaded straight away.
+ *
+ * Opening an episode is taken as wanting to hear it, so the download starts
+ * by itself — no extra tap between choosing an episode and playing it. It
+ * only ever runs once per episode: a failure (quota, offline) leaves a
+ * Resume button rather than retrying in a loop, and leaving the screen
+ * aborts it.
  */
 export function useEpisodeAudio(episode: PodcastEpisode | null): UseEpisodeAudio {
+  const hasKey = useAppStore((state) => Boolean(state.geminiApiKey));
   const [status, setStatus] = useState<AudioStatus>('checking');
   const [url, setUrl] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<EpisodeTimeline | null>(null);
@@ -44,6 +52,8 @@ export function useEpisodeAudio(episode: PodcastEpisode | null): UseEpisodeAudio
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const urlRef = useRef<string | null>(null);
+  /** The episode whose download has already been started automatically. */
+  const startedRef = useRef<string | null>(null);
 
   const chunkTotal = episode ? chunkCountFor(episode) : 0;
 
@@ -119,6 +129,16 @@ export function useEpisodeAudio(episode: PodcastEpisode | null): UseEpisodeAudio
         setStatus('error');
       });
   }, [episode, adopt]);
+
+  // Start the download as soon as we know there is nothing stored. Guarded
+  // per episode id so a failure doesn't retry forever, and skipped without a
+  // key so the screen can explain that instead of showing an error.
+  useEffect(() => {
+    if (!episode || status !== 'absent' || !hasKey) return;
+    if (startedRef.current === episode.id) return;
+    startedRef.current = episode.id;
+    build();
+  }, [episode, status, hasKey, build]);
 
   return { status, url, timeline, progress, error, chunkTotal, build };
 }
