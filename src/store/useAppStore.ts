@@ -3,7 +3,14 @@ import { persist } from 'zustand/middleware';
 import { localDateISO } from '../lib/dailyIndex';
 import { afterMiss, afterPass, type RecallRecord } from '../lib/recall';
 import { INITIAL_STREAK, recordPracticeDay, type DailyStreak } from '../lib/streak';
-import type { AppView, Language, Level, MasteredEntry, VocabEntry } from '../lib/types';
+import type {
+  AppView,
+  EpisodeProgress,
+  Language,
+  Level,
+  MasteredEntry,
+  VocabEntry,
+} from '../lib/types';
 import { audioStorage } from '../services/audioStorage';
 import { DEFAULT_GEMINI_TTS_MODEL } from '../services/gemini';
 
@@ -52,6 +59,10 @@ interface AppState {
   savedVocab: Record<string, VocabEntry>;
   /** Episode last opened, so the Podcast tab reopens where the listener was. */
   lastEpisodeId: string | null;
+  /** Podcast playback speed — 1 is normal. Shared across all episodes. */
+  podcastRate: number;
+  /** Listening progress per episode id, for the shelf's Finished mark and resume. */
+  episodeProgress: Record<string, EpisodeProgress>;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
@@ -103,8 +114,12 @@ interface AppState {
   removeVocab: (word: string) => void;
   /** Adopt saved words pulled from the backend. */
   mergeVocab: (entries: Record<string, VocabEntry>) => void;
+  /** Fill in a translation found after the word was already saved (e.g. a lookup that arrives late). Never overwrites one that's already there. */
+  setVocabTranslation: (word: string, translation: string) => void;
   /** Remember (or clear, with null) the episode being listened to. */
   setLastEpisodeId: (id: string | null) => void;
+  setPodcastRate: (rate: number) => void;
+  setEpisodeProgress: (episodeId: string, progress: EpisodeProgress) => void;
   setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
@@ -127,6 +142,8 @@ export const useAppStore = create<AppState>()(
       dailyStreak: INITIAL_STREAK,
       savedVocab: {},
       lastEpisodeId: null,
+      podcastRate: 1,
+      episodeProgress: {},
       view: 'today',
       settingsOpen: false,
       memorizePhraseId: null,
@@ -220,7 +237,18 @@ export const useAppStore = create<AppState>()(
         }),
       mergeVocab: (entries) =>
         set((state) => ({ savedVocab: { ...entries, ...state.savedVocab } })),
+      setVocabTranslation: (word, translation) =>
+        set((state) => {
+          const entry = state.savedVocab[word];
+          if (!entry || entry.translation) return state; // gone, or already has one
+          return { savedVocab: { ...state.savedVocab, [word]: { ...entry, translation } } };
+        }),
       setLastEpisodeId: (lastEpisodeId) => set({ lastEpisodeId }),
+      setPodcastRate: (podcastRate) => set({ podcastRate }),
+      setEpisodeProgress: (episodeId, progress) =>
+        set((state) => ({
+          episodeProgress: { ...state.episodeProgress, [episodeId]: progress },
+        })),
       setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
@@ -248,6 +276,8 @@ export const useAppStore = create<AppState>()(
         dailyStreak: state.dailyStreak,
         savedVocab: state.savedVocab,
         lastEpisodeId: state.lastEpisodeId,
+        podcastRate: state.podcastRate,
+        episodeProgress: state.episodeProgress,
       }),
     },
   ),

@@ -3,21 +3,25 @@ import { Button } from '../components/Button';
 import { Header } from '../components/Header';
 import { NowPlayingBar } from '../components/podcast/NowPlayingBar';
 import { TranscriptLine } from '../components/podcast/TranscriptLine';
-import { BackIcon, HeadphonesIcon, TrashIcon } from '../components/icons';
+import { BackIcon, CheckIcon, HeadphonesIcon, TrashIcon } from '../components/icons';
 import { useEpisodeAudio } from '../hooks/useEpisodeAudio';
 import { usePodcastShelf } from '../hooks/usePodcastShelf';
 import { usePodcastPlayer } from '../hooks/usePodcastPlayer';
 import { isBuiltIn } from '../lib/episodeLibrary';
 import { LANGUAGES } from '../lib/languages';
 import { normalizeWord } from '../lib/textTokens';
-import type { PodcastEpisode } from '../lib/types';
+import type { EpisodeProgress, PodcastEpisode } from '../lib/types';
 import { listBuiltEpisodeIds } from '../services/episodeAudio';
+import { translateWord } from '../services/wordTranslate';
 import { useAppStore } from '../store/useAppStore';
 
 /** Rough spoken length. Short sentences land around 3.5s each. */
 function estimateMinutes(lineCount: number): number {
   return Math.max(1, Math.round((lineCount * 3.5) / 60));
 }
+
+/** Below this, "in progress" isn't a meaningful claim — treat it as unstarted. */
+const PROGRESS_MIN_SEC = 10;
 
 /**
  * Podcast tab: a shelf of listening episodes at the learner's level, each
@@ -48,6 +52,28 @@ export function PodcastScreen() {
   return <EpisodeShelf shelf={shelf} onOpen={(id) => setLastEpisodeId(id)} />;
 }
 
+function formatMinutes(seconds: number): string {
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return `${minutes} min left`;
+}
+
+/** A thin bar under a shelf card for an episode heard partway through. Silent for anything finished, unstarted, or without a stored duration yet. */
+function EpisodeProgressBar({ progress }: { progress: EpisodeProgress | undefined }) {
+  if (!progress || progress.finished) return null;
+  if (progress.positionSec < PROGRESS_MIN_SEC || progress.durationSec <= 0) return null;
+  const percent = Math.min(100, Math.round((progress.positionSec / progress.durationSec) * 100));
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-cream-200">
+        <div className="h-full rounded-full bg-sage-400" style={{ width: `${percent}%` }} />
+      </div>
+      <span className="shrink-0 text-xs text-slate-400">
+        {formatMinutes(progress.durationSec - progress.positionSec)}
+      </span>
+    </div>
+  );
+}
+
 function EpisodeShelf({
   shelf,
   onOpen,
@@ -57,6 +83,7 @@ function EpisodeShelf({
 }) {
   const language = useAppStore((state) => state.language);
   const hasGeminiKey = useAppStore((state) => Boolean(state.geminiApiKey));
+  const episodeProgress = useAppStore((state) => state.episodeProgress);
   const [downloaded, setDownloaded] = useState<Set<string>>(new Set());
   const meta = language ? LANGUAGES[language] : null;
 
@@ -97,8 +124,15 @@ function EpisodeShelf({
                   {!isBuiltIn(episode) && (
                     <span className="text-xs font-semibold text-slate-400">Yours</span>
                   )}
-                  {downloaded.has(episode.id) && (
-                    <span className="text-xs font-semibold text-sage-600">Downloaded</span>
+                  {episodeProgress[episode.id]?.finished ? (
+                    <span className="flex items-center gap-0.5 text-xs font-semibold text-sage-600">
+                      <CheckIcon className="h-3.5 w-3.5" />
+                      Finished
+                    </span>
+                  ) : (
+                    downloaded.has(episode.id) && (
+                      <span className="text-xs font-semibold text-sage-600">Downloaded</span>
+                    )
                   )}
                 </div>
                 <p className="mt-1 truncate font-bold text-slate-800">{episode.title}</p>
@@ -106,6 +140,7 @@ function EpisodeShelf({
                   {episode.topicEn} · about {estimateMinutes(episode.lines.length)} min ·{' '}
                   {episode.lines.length} sentences
                 </p>
+                <EpisodeProgressBar progress={episodeProgress[episode.id]} />
               </button>
               {!isBuiltIn(episode) && (
                 <button
@@ -158,33 +193,69 @@ function EpisodeShelf({
   );
 }
 
+/** Finds a glossary term that contains `word`, so tapping "Fahrkarte" inside "die Fahrkarte" still gets its known meaning. */
+function glossaryTranslationFor(word: string, vocab: PodcastEpisode['vocab']): string {
+  for (const item of vocab) {
+    const words = item.term.split(/\s+/).map(normalizeWord);
+    if (words.includes(word)) return item.en;
+  }
+  return '';
+}
+
+interface ToggleWordOptions {
+  /** The sentence (or glossary meaning) it was saved from, for context. */
+  context: string;
+  /** English translation of `context`, when it's a transcript sentence. */
+  contextEn?: string;
+  /** Already known — a glossary chip carries its own meaning. */
+  translation?: string;
+}
+
 function EpisodePlayer({ episode, onBack }: { episode: PodcastEpisode; onBack: () => void }) {
   const audio = useEpisodeAudio(episode);
   const player = usePodcastPlayer(episode, audio.url, audio.timeline);
   const savedVocab = useAppStore((state) => state.savedVocab);
   const saveVocab = useAppStore((state) => state.saveVocab);
   const removeVocab = useAppStore((state) => state.removeVocab);
+  const setVocabTranslation = useAppStore((state) => state.setVocabTranslation);
+  const apiKey = useAppStore((state) => state.geminiApiKey);
 
   const savedWords = useMemo(() => new Set(Object.keys(savedVocab)), [savedVocab]);
 
-  /** Tapping a word toggles it, so a mis-tap is one tap to undo. */
-  const toggleWord = (display: string, context: string, translation = '') => {
+  /**
+   * Tapping a word toggles it, so a mis-tap is one tap to undo. A
+   * translation comes from whichever is cheapest and available: the
+   * glossary, then (if neither that nor the caller already has one) a
+   * one-word Gemini lookup fired after saving so the tap itself never waits
+   * on a network round trip.
+   */
+  const toggleWord = (display: string, { context, contextEn, translation }: ToggleWordOptions) => {
     const word = normalizeWord(display);
     if (!word) return;
     if (savedVocab[word]) {
       removeVocab(word);
       return;
     }
+    const known = translation || glossaryTranslationFor(word, episode.vocab);
     saveVocab({
       word,
       display,
-      // A glossary term carries its meaning; a word tapped in the flow of the
-      // transcript doesn't, and that's fine — it's still worth collecting.
-      translation,
+      translation: known,
       language: episode.language,
       savedAt: Date.now(),
       context,
+      contextEn,
     });
+
+    if (!known && apiKey) {
+      void translateWord(apiKey, display, context, episode.language)
+        .then((result) => {
+          if (result) setVocabTranslation(word, result);
+        })
+        .catch(() => {
+          /* leave it untranslated — still useful to have saved */
+        });
+    }
   };
 
   const current = episode.lines[player.index];
@@ -211,9 +282,11 @@ function EpisodePlayer({ episode, onBack }: { episode: PodcastEpisode; onBack: (
             currentTime={player.currentTime}
             duration={player.duration}
             playing={player.playing}
+            rate={player.rate}
             onToggle={player.toggle}
             onSeekTime={player.seekToTime}
             onSkip={player.skip}
+            onCycleRate={player.cycleRate}
           />
         ) : (
           <AudioSetup episode={episode} audio={audio} />
@@ -236,7 +309,7 @@ function EpisodePlayer({ episode, onBack }: { episode: PodcastEpisode; onBack: (
             index={i}
             active={audio.status === 'ready' && i === player.index}
             savedWords={savedWords}
-            onWordTap={toggleWord}
+            onWordTap={(display, context, contextEn) => toggleWord(display, { context, contextEn })}
             onSeek={audio.status === 'ready' ? player.seekToLine : undefined}
           />
         ))}
@@ -253,7 +326,7 @@ function EpisodePlayer({ episode, onBack }: { episode: PodcastEpisode; onBack: (
               return (
                 <li key={item.term}>
                   <button
-                    onClick={() => toggleWord(item.term, item.en, item.en)}
+                    onClick={() => toggleWord(item.term, { context: item.en, translation: item.en })}
                     className={`flex w-full items-baseline gap-2 rounded-2xl px-3 py-2 text-left transition-colors ${
                       saved ? 'bg-sage-100' : 'active:bg-cream-100'
                     }`}

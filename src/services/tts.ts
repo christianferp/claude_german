@@ -272,6 +272,18 @@ export interface RawSpeech {
   sampleRate: number;
 }
 
+export interface SynthesizeSpeechOptions {
+  signal?: AbortSignal;
+  /**
+   * True for every chunk after an episode's first. A chunk is normally
+   * prompted as its own standalone passage, which gives each one its own
+   * opening and closing intonation — audible as a seam between otherwise
+   * adjacent sentences. Marking it a continuation asks the model to carry
+   * the same voice and pace through instead of restarting it.
+   */
+  continuation?: boolean;
+}
+
 /**
  * One TTS request returning raw PCM rather than a playable blob, so callers
  * can concatenate many pieces into a single gapless track and know exactly
@@ -280,16 +292,19 @@ export interface RawSpeech {
 export async function synthesizeSpeechPcm(
   text: string,
   lang: string,
-  signal?: AbortSignal,
+  { signal, continuation = false }: SynthesizeSpeechOptions = {},
 ): Promise<RawSpeech> {
   const apiKey = useAppStore.getState().geminiApiKey;
   if (!apiKey) throw new TtsError('no-key', 'No Gemini API key.');
   const model = useAppStore.getState().geminiTtsModel;
 
   const languageName = LANGUAGE_NAMES[lang.slice(0, 2).toLowerCase()];
+  const style = continuation
+    ? 'This continues a passage already being read aloud in the same recording — keep the exact same voice, pace and energy, with no re-introduction and no closing cadence; just carry straight on as if there were no break.'
+    : 'This is the start of a podcast passage read aloud in a warm, friendly presenter voice.';
   const prompt = languageName
-    ? `Read this ${languageName} podcast passage aloud in a warm, friendly presenter voice, at a calm natural pace with short pauses between sentences:\n\n${text}`
-    : `Read this podcast passage aloud in a warm, friendly voice at a calm natural pace:\n\n${text}`;
+    ? `Read this ${languageName} text aloud at a calm, natural pace, as one continuous flowing narration — brief natural pauses between sentences like relaxed spoken conversation, never a hard stop or dead air. ${style}\n\n${text}`
+    : `Read this text aloud at a calm, natural pace, as one continuous flowing narration — brief natural pauses between sentences like relaxed spoken conversation, never a hard stop or dead air. ${style}\n\n${text}`;
 
   let response: Response;
   try {

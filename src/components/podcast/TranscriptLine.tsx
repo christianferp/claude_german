@@ -9,7 +9,7 @@ interface TranscriptLineProps {
   active: boolean;
   /** Normalized words already saved — rendered as such wherever they appear. */
   savedWords: Set<string>;
-  onWordTap: (display: string, context: string) => void;
+  onWordTap: (display: string, context: string, contextEn: string) => void;
   /** Absent until the audio is built — there is nowhere to seek to yet. */
   onSeek?: (index: number) => void;
 }
@@ -64,7 +64,7 @@ export function TranscriptLine({
             return (
               <button
                 key={i}
-                onClick={() => onWordTap(token.raw, line.de)}
+                onClick={() => onWordTap(token.raw, line.de, line.en)}
                 className={`rounded transition-colors ${
                   saved
                     ? 'bg-sage-200/70 font-semibold text-sage-800 underline decoration-sage-500 decoration-2 underline-offset-2'
