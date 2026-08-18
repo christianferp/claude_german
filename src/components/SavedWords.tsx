@@ -50,9 +50,7 @@ export function SavedWords() {
                     {savedVocab[expanded].translation}
                   </p>
                 ) : (
-                  <p className="mt-0.5 text-sm italic text-slate-400">
-                    No translation saved — you tapped this one in the transcript.
-                  </p>
+                  <p className="mt-0.5 text-sm italic text-slate-400">No translation saved yet.</p>
                 )}
               </div>
               <button
@@ -67,9 +65,14 @@ export function SavedWords() {
               </button>
             </div>
             {savedVocab[expanded].context && (
-              <p className="mt-2 border-l-2 border-sage-200 pl-2 text-xs italic text-slate-500">
-                {savedVocab[expanded].context}
-              </p>
+              <div className="mt-2 border-l-2 border-sage-200 pl-2">
+                <p className="text-xs italic text-slate-500">{savedVocab[expanded].context}</p>
+                {savedVocab[expanded].contextEn && (
+                  <p className="mt-0.5 text-xs italic text-slate-400">
+                    {savedVocab[expanded].contextEn}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

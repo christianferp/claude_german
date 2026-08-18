@@ -71,12 +71,22 @@ export interface VocabEntry {
   word: string;
   /** As it appeared in the text, for display. */
   display: string;
-  /** Known when the word came from an episode glossary; empty otherwise. */
+  /** The word's own meaning — from the glossary, a lookup, or left blank. */
   translation: string;
   language: Language;
   savedAt: number;
   /** The sentence it was saved from, for context. */
   context: string;
+  /** English translation of `context`, when it came from a transcript line. */
+  contextEn?: string;
+}
+
+/** How far a listener has gotten into an episode, for the shelf and resume. */
+export interface EpisodeProgress {
+  positionSec: number;
+  durationSec: number;
+  finished: boolean;
+  updatedAt: number;
 }
 
 export type RecorderStatus =

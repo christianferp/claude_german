@@ -19,11 +19,39 @@ import { LANGUAGES } from '../lib/languages';
 import type { PodcastEpisode } from '../lib/types';
 import { synthesizeSpeechPcm, TtsError, type TtsErrorKind } from './tts';
 
-/** Sentences are grouped up to these limits per TTS request. */
-const CHUNK_CHAR_BUDGET = 700;
-const CHUNK_MAX_LINES = 10;
-/** Breathing room between chunks so the joins don't sound clipped. */
-const GAP_MS = 250;
+interface ChunkLimits {
+  charBudget: number;
+  maxLines: number;
+}
+
+/**
+ * Sentences are grouped up to these limits per TTS request. Bigger chunks
+ * mean fewer seams between separately-synthesized pieces, which is most of
+ * what made early episodes sound like a row of separate recordings rather
+ * than one narration (see the continuation prompting in tts.ts for the
+ * rest). Episodes already recorded under the old, smaller limits keep
+ * playing under `LEGACY_CHUNK_LIMITS` — see `loadEpisodeAudio` — so this
+ * only affects new recordings, never a re-record of something you already
+ * have.
+ */
+const CHUNK_LIMITS: ChunkLimits = { charBudget: 1400, maxLines: 18 };
+const LEGACY_CHUNK_LIMITS: ChunkLimits = { charBudget: 700, maxLines: 10 };
+
+/**
+ * Breathing room between chunks so the joins don't sound abrupt — a small
+ * natural gap, not a stop. Most of the old dead air at each seam was the
+ * model's own leading/trailing silence on every request, which is trimmed
+ * separately in `assemble`; this is only the deliberate join itself.
+ */
+const GAP_MS = 90;
+/**
+ * Samples at or below this amplitude (out of a 16-bit signed range) count as
+ * silence when trimming the ends of a chunk. Low enough to leave real quiet
+ * speech alone, high enough to catch encoder noise floor.
+ */
+const SILENCE_AMPLITUDE = 400;
+/** A sliver of quiet is kept at each trimmed edge so a cut doesn't click. */
+const TRIM_MARGIN_MS = 40;
 /**
  * Episodes whose audio is kept on the device. The shelf holds more than
  * this, so eviction is by least recently played rather than oldest built:
@@ -47,6 +75,13 @@ interface TrackRecord {
   timeline: EpisodeTimeline;
   sampleRate: number;
   chunkCount: number;
+  /**
+   * Which transcript lines went into each chunk, so a track built under one
+   * set of chunking limits keeps matching after those limits change.
+   * Absent on tracks written before this field existed — those fall back to
+   * `LEGACY_CHUNK_LIMITS`, which is what they were actually built with.
+   */
+  lineIndices?: number[][];
   builtAt: number;
   /** Touched every time the track is loaded, so eviction spares favourites. */
   playedAt?: number;
@@ -101,14 +136,17 @@ interface Chunk {
   text: string;
 }
 
-function chunkEpisode(episode: PodcastEpisode): Chunk[] {
+function chunkEpisode(episode: PodcastEpisode, limits: ChunkLimits = CHUNK_LIMITS): Chunk[] {
   const chunks: Chunk[] = [];
   let current: number[] = [];
   let chars = 0;
 
   episode.lines.forEach((line, index) => {
     const length = line.de.length;
-    if (current.length > 0 && (chars + length > CHUNK_CHAR_BUDGET || current.length >= CHUNK_MAX_LINES)) {
+    if (
+      current.length > 0 &&
+      (chars + length > limits.charBudget || current.length >= limits.maxLines)
+    ) {
       chunks.push({ lineIndices: current, text: current.map((i) => episode.lines[i].de).join(' ') });
       current = [];
       chars = 0;
@@ -120,6 +158,44 @@ function chunkEpisode(episode: PodcastEpisode): Chunk[] {
     chunks.push({ lineIndices: current, text: current.map((i) => episode.lines[i].de).join(' ') });
   }
   return chunks;
+}
+
+/** Rebuild a `Chunk[]` from a stored layout, so old tracks keep matching even after the limits above change. */
+function chunksFromLayout(episode: PodcastEpisode, lineIndices: number[][]): Chunk[] {
+  return lineIndices.map((indices) => ({
+    lineIndices: indices,
+    text: indices.map((i) => episode.lines[i].de).join(' '),
+  }));
+}
+
+/**
+ * Index of the first sample whose amplitude exceeds the silence threshold,
+ * scanning from `start` toward `end` in the given direction.
+ */
+function findSoundEdge(pcm: Uint8Array, start: number, end: number, step: number): number {
+  const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+  for (let byteOffset = start; step > 0 ? byteOffset < end : byteOffset > end; byteOffset += step) {
+    if (Math.abs(view.getInt16(byteOffset, true)) > SILENCE_AMPLITUDE) return byteOffset;
+  }
+  return start;
+}
+
+/**
+ * Trims near-silence from both ends of one chunk's PCM. This is what the
+ * model itself adds to the start and end of every request — stacked across
+ * many chunks it was the bulk of the "separate recordings" effect, well
+ * beyond the deliberate join gap.
+ */
+function trimSilence(pcm: Uint8Array, sampleRate: number): Uint8Array {
+  const bytesPerSample = 2;
+  const marginBytes =
+    bytesPerSample * Math.round(((TRIM_MARGIN_MS / 1000) * sampleRate));
+  const soundStart = findSoundEdge(pcm, 0, pcm.length, bytesPerSample);
+  const soundEnd = findSoundEdge(pcm, pcm.length - bytesPerSample, 0, -bytesPerSample);
+  const start = Math.max(0, soundStart - marginBytes) & ~1; // stay sample-aligned
+  const end = Math.min(pcm.length, soundEnd + bytesPerSample + marginBytes);
+  if (end <= start) return pcm; // silent chunk — leave it as is rather than emptying it
+  return pcm.subarray(start, end);
 }
 
 // ── Build ───────────────────────────────────────────────────────────────────
@@ -146,14 +222,19 @@ function chunkKey(episodeId: string, index: number): string {
   return `${episodeId}:${index}`;
 }
 
-/** Concatenate chunk PCM and derive the per-sentence timeline. */
+/**
+ * Concatenate chunk PCM and derive the per-sentence timeline. Runs on every
+ * load, not just every build, so trimming here reaches audio that was
+ * already downloaded — no re-recording needed for tighter joins.
+ */
 function assemble(
   episode: PodcastEpisode,
   chunks: Chunk[],
-  pieces: Uint8Array[],
+  rawPieces: Uint8Array[],
   sampleRate: number,
 ): EpisodeAudio {
   const bytesPerSecond = sampleRate * 2; // 16-bit mono
+  const pieces = rawPieces.map((piece) => trimSilence(piece, sampleRate));
   // Keep the gap sample-aligned (2 bytes per sample) or the join clicks.
   const gapBytes = 2 * Math.round(((GAP_MS / 1000) * bytesPerSecond) / 2);
   const startSec = new Array<number>(episode.lines.length).fill(0);
@@ -203,7 +284,13 @@ export async function loadEpisodeAudio(episode: PodcastEpisode): Promise<Episode
   ).catch(() => undefined);
   if (!track) return null;
 
-  const chunks = chunkEpisode(episode);
+  // A track remembers its own layout, so it keeps matching even after the
+  // chunking limits change; only a track from before that field existed
+  // falls back to recomputing it, with the limits it was actually built
+  // under.
+  const chunks = track.lineIndices
+    ? chunksFromLayout(episode, track.lineIndices)
+    : chunkEpisode(episode, LEGACY_CHUNK_LIMITS);
   if (chunks.length !== track.chunkCount) return null; // transcript changed
 
   const pieces: Uint8Array[] = [];
@@ -255,7 +342,17 @@ export async function buildEpisodeAudio(
   onProgress?: (progress: BuildProgress) => void,
   signal?: AbortSignal,
 ): Promise<EpisodeAudio> {
-  const chunks = chunkEpisode(episode);
+  // A resumed build must reuse the SAME layout it started with, or a chunk
+  // already stored under the old numbering would be attached to the wrong
+  // sentences. Only a track with no chunks recorded yet is free to adopt
+  // the current limits.
+  const existingTrack = await withStore(TRACKS, 'readonly', (store) =>
+    request<TrackRecord | undefined>(store, (s) => s.get(episode.id)),
+  ).catch(() => undefined);
+  const chunks =
+    existingTrack?.lineIndices && existingTrack.chunkCount > 0
+      ? chunksFromLayout(episode, existingTrack.lineIndices)
+      : chunkEpisode(episode);
   const lang = LANGUAGES[episode.language].ttsLang;
   const pieces: Uint8Array[] = [];
   let sampleRate = 24000;
@@ -273,7 +370,7 @@ export async function buildEpisodeAudio(
     } else {
       let speech;
       try {
-        speech = await synthesizeSpeechPcm(chunks[i].text, lang, signal);
+        speech = await synthesizeSpeechPcm(chunks[i].text, lang, { signal, continuation: i > 0 });
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') throw err;
         const kind = err instanceof TtsError ? err.kind : 'other';
@@ -304,6 +401,7 @@ export async function buildEpisodeAudio(
           timeline: audio.timeline,
           sampleRate,
           chunkCount: chunks.length,
+          lineIndices: chunks.map((chunk) => chunk.lineIndices),
           builtAt: Date.now(),
         } satisfies TrackRecord,
         episode.id,

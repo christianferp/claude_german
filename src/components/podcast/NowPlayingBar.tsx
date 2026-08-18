@@ -6,9 +6,16 @@ interface NowPlayingBarProps {
   currentTime: number;
   duration: number;
   playing: boolean;
+  rate: number;
   onToggle: () => void;
   onSeekTime: (seconds: number) => void;
   onSkip: (seconds: number) => void;
+  onCycleRate: () => void;
+}
+
+function formatRate(rate: number): string {
+  // Trim a trailing .0 (1×) but keep one decimal for the rest (0.5×, 1.25× → 1.25×).
+  return `${Number.isInteger(rate) ? rate : rate}×`;
 }
 
 function formatTime(seconds: number): string {
@@ -27,14 +34,27 @@ export function NowPlayingBar({
   currentTime,
   duration,
   playing,
+  rate,
   onToggle,
   onSeekTime,
   onSkip,
+  onCycleRate,
 }: NowPlayingBarProps) {
   return (
     <div className="pb-1 pt-1">
-      <p className="min-h-[3.5rem] text-lg font-bold leading-snug text-slate-800">{line?.de}</p>
-      <p className="mt-0.5 text-sm text-slate-500">{line?.en}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="min-h-[3.5rem] text-lg font-bold leading-snug text-slate-800">{line?.de}</p>
+          <p className="mt-0.5 text-sm text-slate-500">{line?.en}</p>
+        </div>
+        <button
+          onClick={onCycleRate}
+          className="mt-0.5 shrink-0 rounded-full bg-sage-100 px-2.5 py-1 text-xs font-bold text-sage-700 active:bg-sage-200"
+          aria-label={`Playback speed, currently ${formatRate(rate)}`}
+        >
+          {formatRate(rate)}
+        </button>
+      </div>
 
       <input
         type="range"
