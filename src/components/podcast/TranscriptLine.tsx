@@ -10,7 +10,8 @@ interface TranscriptLineProps {
   /** Normalized words already saved — rendered as such wherever they appear. */
   savedWords: Set<string>;
   onWordTap: (display: string, context: string) => void;
-  onSeek: (index: number) => void;
+  /** Absent until the audio is built — there is nowhere to seek to yet. */
+  onSeek?: (index: number) => void;
 }
 
 /**
@@ -41,15 +42,19 @@ export function TranscriptLine({
         active ? 'bg-sage-100' : ''
       }`}
     >
-      <button
-        onClick={() => onSeek(index)}
-        className={`mt-1 h-6 w-6 shrink-0 rounded-full p-1 transition-colors ${
-          active ? 'text-sage-700' : 'text-slate-300 active:text-sage-600'
-        }`}
-        aria-label={`Play from sentence ${index + 1}`}
-      >
-        <PlayIcon className="h-4 w-4" />
-      </button>
+      {onSeek ? (
+        <button
+          onClick={() => onSeek(index)}
+          className={`mt-1 h-6 w-6 shrink-0 rounded-full p-1 transition-colors ${
+            active ? 'text-sage-700' : 'text-slate-300 active:text-sage-600'
+          }`}
+          aria-label={`Play from sentence ${index + 1}`}
+        >
+          <PlayIcon className="h-4 w-4" />
+        </button>
+      ) : (
+        <span className="mt-1 h-6 w-6 shrink-0" aria-hidden="true" />
+      )}
 
       <div className="min-w-0 flex-1">
         <p className={`leading-snug ${active ? 'font-bold text-slate-800' : 'text-slate-700'}`}>

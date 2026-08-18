@@ -1,127 +1,232 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { LANGUAGES } from '../lib/languages';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PodcastEpisode } from '../lib/types';
+import type { EpisodeTimeline } from '../services/episodeAudio';
 import { tts } from '../services/tts';
 
 export interface UsePodcastPlayer {
-  /** Index of the sentence currently spoken (or cued up while paused). */
+  /** Transcript line matching the current playback position. */
   index: number;
   playing: boolean;
-  /** True once the last sentence has been spoken. */
+  currentTime: number;
+  duration: number;
   finished: boolean;
-  play: () => void;
-  pause: () => void;
   toggle: () => void;
-  next: () => void;
-  prev: () => void;
-  seekTo: (index: number) => void;
+  /** Jump to the start of a transcript line. */
+  seekToLine: (index: number) => void;
+  seekToTime: (seconds: number) => void;
+  skip: (seconds: number) => void;
   restart: () => void;
 }
 
+/** Last line whose start is at or before `time`. */
+function lineAt(startSec: number[], time: number): number {
+  let low = 0;
+  let high = startSec.length - 1;
+  let found = 0;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (startSec[mid] <= time) {
+      found = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return found;
+}
+
 /**
- * Plays an episode one sentence at a time through the shared TTS service.
+ * Plays an episode's single continuous track through one audio element.
  *
- * Sentence-at-a-time is what keeps the transcript highlight genuinely in
- * sync: a single long audio file would give us no timing information. It
- * also means playback inherits the existing per-line fallback — if the AI
- * voice fails or hits quota mid-episode, that sentence (and the rest) is
- * spoken by the device voice instead of the episode stopping dead.
+ * One element (rather than a sentence at a time) is what makes this behave
+ * like a real podcast: gapless, scrubbable, and able to keep playing when
+ * the screen locks — with the lockscreen controls wired up through the Media
+ * Session API. Sentence highlighting is derived from the pre-computed
+ * timeline as playback moves, so nothing has to be re-synthesized to follow
+ * along.
  */
-export function usePodcastPlayer(episode: PodcastEpisode | null): UsePodcastPlayer {
-  const [index, setIndex] = useState(0);
+export function usePodcastPlayer(
+  episode: PodcastEpisode | null,
+  url: string | null,
+  timeline: EpisodeTimeline | null,
+): UsePodcastPlayer {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  /** Bumped by every pause/seek so a still-running loop knows it is stale. */
-  const runRef = useRef(0);
-  const indexRef = useRef(0);
-  indexRef.current = index;
+  const startSec = useMemo(() => timeline?.startSec ?? [], [timeline]);
 
-  const lang = episode ? LANGUAGES[episode.language].ttsLang : 'de-DE';
-
-  const stopAudio = useCallback(() => {
-    runRef.current += 1;
-    tts.stop();
-    setPlaying(false);
+  // One element for the life of the screen; only its source changes.
+  useEffect(() => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audioRef.current = audio;
+    return () => {
+      audio.pause();
+      audio.src = '';
+      audioRef.current = null;
+    };
   }, []);
 
-  // A different episode, or leaving the screen, must not keep talking.
   useEffect(() => {
-    setIndex(0);
+    const audio = audioRef.current;
+    if (!audio || !url) return;
+    // Never talk over the episode with the phrase-level TTS voice.
+    tts.stop();
+    audio.src = url;
+    audio.currentTime = 0;
+    setCurrentTime(0);
     setFinished(false);
-    return stopAudio;
-  }, [episode?.id, stopAudio]);
+    setPlaying(false);
+  }, [url]);
 
-  const play = useCallback(() => {
-    if (!episode || episode.lines.length === 0) return;
-    runRef.current += 1;
-    const run = runRef.current;
-    setPlaying(true);
-    setFinished(false);
-
-    void (async () => {
-      // If every sentence fails instantly (offline with no speech synthesis,
-      // or autoplay blocked) the loop would silently race to the end. Bail
-      // out instead and leave the play button for a deliberate retry.
-      let instantFailures = 0;
-
-      for (let i = indexRef.current; i < episode.lines.length; i++) {
-        if (runRef.current !== run) return; // paused or seeked — abandon this loop
-        setIndex(i);
-        // Warm the next sentence while this one plays, so the gap is short.
-        const upcoming = episode.lines[i + 1];
-        if (upcoming) tts.prefetch(upcoming.de, { lang });
-
-        const startedAt = Date.now();
-        try {
-          await tts.speak(episode.lines[i].de, { lang });
-          instantFailures = 0;
-        } catch {
-          // One bad sentence shouldn't end the episode — but a burst of
-          // immediate failures means no audio is reaching the speaker.
-          if (Date.now() - startedAt < 150) instantFailures += 1;
-          if (instantFailures >= 3) {
-            setPlaying(false);
-            return;
-          }
-        }
-        if (runRef.current !== run) return;
-      }
+  // Playback events drive every piece of derived state.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onTime = () => setCurrentTime(audio.currentTime);
+    const onDuration = () => {
+      // A WAV built in the browser sometimes reports Infinity until it seeks.
+      if (Number.isFinite(audio.duration)) setDuration(audio.duration);
+    };
+    const onPlay = () => {
+      setPlaying(true);
+      setFinished(false);
+    };
+    const onPause = () => setPlaying(false);
+    const onEnded = () => {
       setPlaying(false);
       setFinished(true);
-    })();
-  }, [episode, lang]);
-
-  const pause = useCallback(() => {
-    stopAudio();
-  }, [stopAudio]);
+    };
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('loadedmetadata', onDuration);
+    audio.addEventListener('durationchange', onDuration);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('ended', onEnded);
+    return () => {
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('loadedmetadata', onDuration);
+      audio.removeEventListener('durationchange', onDuration);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('ended', onEnded);
+    };
+  }, [url]);
 
   const toggle = useCallback(() => {
-    if (playing) pause();
-    else play();
-  }, [playing, pause, play]);
+    const audio = audioRef.current;
+    if (!audio || !audio.src) return;
+    if (audio.paused) void audio.play().catch(() => setPlaying(false));
+    else audio.pause();
+  }, []);
 
-  /** Jump to a sentence, keeping whatever play/pause state we were in. */
-  const seekTo = useCallback(
-    (target: number) => {
-      if (!episode) return;
-      const clamped = Math.max(0, Math.min(target, episode.lines.length - 1));
-      const wasPlaying = playing;
-      stopAudio();
-      setIndex(clamped);
-      indexRef.current = clamped;
-      setFinished(false);
-      if (wasPlaying) {
-        // Let the abandoned loop unwind before starting the next one.
-        setTimeout(play, 0);
-      }
+  const seekToTime = useCallback((seconds: number) => {
+    const audio = audioRef.current;
+    if (!audio || !audio.src) return;
+    const limit = Number.isFinite(audio.duration) ? audio.duration : seconds;
+    audio.currentTime = Math.max(0, Math.min(seconds, limit));
+    setCurrentTime(audio.currentTime);
+    setFinished(false);
+  }, []);
+
+  const seekToLine = useCallback(
+    (line: number) => {
+      const target = startSec[Math.max(0, Math.min(line, startSec.length - 1))] ?? 0;
+      // Nudge just past the boundary so the intended line is the active one.
+      seekToTime(target + 0.01);
     },
-    [episode, playing, stopAudio, play],
+    [startSec, seekToTime],
   );
 
-  const next = useCallback(() => seekTo(indexRef.current + 1), [seekTo]);
-  const prev = useCallback(() => seekTo(indexRef.current - 1), [seekTo]);
-  const restart = useCallback(() => seekTo(0), [seekTo]);
+  const skip = useCallback(
+    (seconds: number) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      seekToTime(audio.currentTime + seconds);
+    },
+    [seekToTime],
+  );
 
-  return { index, playing, finished, play, pause, toggle, next, prev, seekTo, restart };
+  const restart = useCallback(() => {
+    seekToTime(0);
+    const audio = audioRef.current;
+    if (audio && audio.src) void audio.play().catch(() => {});
+  }, [seekToTime]);
+
+  // Lockscreen / notification controls, so this behaves like a podcast app
+  // when the phone is locked or the tab is in the background.
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !episode || !url) return;
+    const session = navigator.mediaSession;
+    session.metadata = new MediaMetadata({
+      title: episode.title,
+      artist: 'Daily Phrase',
+      album: `${episode.topicEn} · ${episode.level}`,
+    });
+    const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
+      ['play', () => audioRef.current?.play().catch(() => {})],
+      ['pause', () => audioRef.current?.pause()],
+      ['seekbackward', () => skip(-10)],
+      ['seekforward', () => skip(10)],
+      ['previoustrack', () => skip(-10)],
+      ['nexttrack', () => skip(10)],
+      [
+        'seekto',
+        (details) => {
+          if (details.seekTime !== undefined) seekToTime(details.seekTime);
+        },
+      ],
+    ];
+    for (const [action, handler] of handlers) {
+      try {
+        session.setActionHandler(action, handler);
+      } catch {
+        /* older browsers reject unknown actions */
+      }
+    }
+    return () => {
+      for (const [action] of handlers) {
+        try {
+          session.setActionHandler(action, null);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+  }, [episode, url, skip, seekToTime]);
+
+  // Keep the lockscreen scrubber and play/pause state in step.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+    if ('setPositionState' in navigator.mediaSession && duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration,
+          position: Math.min(currentTime, duration),
+          playbackRate: 1,
+        });
+      } catch {
+        /* position state is best effort */
+      }
+    }
+  }, [playing, currentTime, duration]);
+
+  const index = startSec.length > 0 ? lineAt(startSec, currentTime) : 0;
+
+  return {
+    index,
+    playing,
+    currentTime,
+    duration: duration || timeline?.durationSec || 0,
+    finished,
+    toggle,
+    seekToLine,
+    seekToTime,
+    skip,
+    restart,
+  };
 }
