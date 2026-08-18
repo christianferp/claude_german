@@ -1,5 +1,6 @@
 import { Header } from '../components/Header';
 import { LibraryItem } from '../components/LibraryItem';
+import { SavedWords } from '../components/SavedWords';
 import { getPhraseById } from '../data/phrases';
 import type { MasteredEntry, Phrase } from '../lib/types';
 import { useAppStore } from '../store/useAppStore';
@@ -15,6 +16,10 @@ export function LibraryScreen() {
   return (
     <div className="px-5">
       <Header title="My Library" />
+
+      {/* Words tapped in podcast transcripts, newest first. */}
+      <SavedWords />
+
       <p className="pb-4 text-sm text-slate-400">
         {items.length === 0
           ? 'Your mastered phrases will live here.'

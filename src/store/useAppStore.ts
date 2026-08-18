@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { localDateISO } from '../lib/dailyIndex';
 import { afterMiss, afterPass, type RecallRecord } from '../lib/recall';
 import { INITIAL_STREAK, recordPracticeDay, type DailyStreak } from '../lib/streak';
-import type { AppView, Language, Level, MasteredEntry } from '../lib/types';
+import type { AppView, Language, Level, MasteredEntry, VocabEntry } from '../lib/types';
 import { audioStorage } from '../services/audioStorage';
 import { DEFAULT_GEMINI_TTS_MODEL } from '../services/gemini';
 
@@ -48,6 +48,8 @@ interface AppState {
   recallDone: { date: string; phraseId: string } | null;
   /** Consecutive days practiced, with "freeze" protections (see lib/streak.ts). */
   dailyStreak: DailyStreak;
+  /** Words tapped in a podcast transcript to study later, keyed by normalized word. */
+  savedVocab: Record<string, VocabEntry>;
 
   // ── ephemeral (excluded from persistence) ──────────────────────────────
   view: AppView;
@@ -94,6 +96,11 @@ interface AppState {
   mergeRecall: (records: Record<string, RecallRecord>) => void;
   /** Adopt a streak record pulled from the backend (merge done by caller). */
   setDailyStreak: (streak: DailyStreak) => void;
+  /** Save a tapped word to study later (no-op if already saved). */
+  saveVocab: (entry: VocabEntry) => void;
+  removeVocab: (word: string) => void;
+  /** Adopt saved words pulled from the backend. */
+  mergeVocab: (entries: Record<string, VocabEntry>) => void;
   setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
@@ -114,6 +121,7 @@ export const useAppStore = create<AppState>()(
       recall: {},
       recallDone: null,
       dailyStreak: INITIAL_STREAK,
+      savedVocab: {},
       view: 'today',
       settingsOpen: false,
       memorizePhraseId: null,
@@ -193,6 +201,20 @@ export const useAppStore = create<AppState>()(
       mergeRecall: (records) =>
         set((state) => ({ recall: { ...state.recall, ...records } })),
       setDailyStreak: (dailyStreak) => set({ dailyStreak }),
+      saveVocab: (entry) =>
+        set((state) =>
+          state.savedVocab[entry.word]
+            ? state // already saved — keep the original context and timestamp
+            : { savedVocab: { ...state.savedVocab, [entry.word]: entry } },
+        ),
+      removeVocab: (word) =>
+        set((state) => {
+          const savedVocab = { ...state.savedVocab };
+          delete savedVocab[word];
+          return { savedVocab };
+        }),
+      mergeVocab: (entries) =>
+        set((state) => ({ savedVocab: { ...entries, ...state.savedVocab } })),
       setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
@@ -218,6 +240,7 @@ export const useAppStore = create<AppState>()(
         recall: state.recall,
         recallDone: state.recallDone,
         dailyStreak: state.dailyStreak,
+        savedVocab: state.savedVocab,
       }),
     },
   ),

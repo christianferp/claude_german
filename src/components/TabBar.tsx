@@ -1,5 +1,5 @@
 import { useAppStore } from '../store/useAppStore';
-import { BookIcon, SunIcon, TargetIcon } from './icons';
+import { BookIcon, HeadphonesIcon, SunIcon, TargetIcon } from './icons';
 
 export function TabBar() {
   const view = useAppStore((state) => state.view);
@@ -20,6 +20,10 @@ export function TabBar() {
         <button className={tabClass(view === 'practice')} onClick={() => setView('practice')}>
           <TargetIcon />
           Practice
+        </button>
+        <button className={tabClass(view === 'podcast')} onClick={() => setView('podcast')}>
+          <HeadphonesIcon />
+          Podcast
         </button>
         <button className={tabClass(view === 'library')} onClick={() => setView('library')}>
           <BookIcon />

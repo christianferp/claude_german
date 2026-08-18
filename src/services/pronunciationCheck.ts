@@ -12,15 +12,7 @@ import { LANGUAGES } from '../lib/languages';
 import { levenshtein, normalizeWord, stripDiacritics, wordsOf } from '../lib/textTokens';
 import type { Language } from '../lib/types';
 import { useAppStore } from '../store/useAppStore';
-import { GEMINI_BASE_URL } from './gemini';
-
-/**
- * Model names churn as Google retires generations; try the stable alias
- * first and fall back through known names on 404. The first one that
- * answers is remembered for the rest of the session.
- */
-const STT_MODEL_CANDIDATES = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'];
-let sttModelIndex = 0;
+import { callGeminiText, GeminiError } from './gemini';
 
 const NO_SPEECH_MARKER = '[no speech]';
 
@@ -137,63 +129,19 @@ async function transcribe(blob: Blob, target: CheckTarget, signal?: AbortSignal)
     `quotes or commentary. If there is no discernible speech, output exactly: ${NO_SPEECH_MARKER}`;
 
   const audioB64 = await blobToBase64(blob);
-  let response: Response | null = null;
-  // Walk the model candidates: a 404 means "this model name no longer
-  // exists", so quietly move to the next one.
-  while (sttModelIndex < STT_MODEL_CANDIDATES.length) {
-    const model = STT_MODEL_CANDIDATES[sttModelIndex];
-    try {
-      response = await fetch(`${GEMINI_BASE_URL}/models/${model}:generateContent`, {
-        method: 'POST',
-        signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': useAppStore.getState().geminiApiKey,
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { inlineData: { mimeType: 'audio/wav', data: audioB64 } },
-              ],
-            },
-          ],
-          generationConfig: { temperature: 0 },
-        }),
-      });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') throw err;
-      throw new PronunciationCheckError('network', 'Could not reach Gemini.');
-    }
-    if (response.status !== 404) break;
-    sttModelIndex++;
-    response = null;
-  }
-  if (!response) {
-    throw new PronunciationCheckError('other', 'No available Gemini transcription model.');
-  }
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    const detail = /"message"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? '';
-    if (response.status === 429) throw new PronunciationCheckError('quota', 'Quota exhausted.');
-    if ([401, 403].includes(response.status) || (response.status === 400 && /api key/i.test(detail))) {
-      throw new PronunciationCheckError('auth', `Key rejected (HTTP ${response.status}).`);
-    }
-    throw new PronunciationCheckError(
-      'other',
-      `HTTP ${response.status}${detail ? ` — ${detail}` : ''}`,
+  let transcript: string;
+  try {
+    transcript = await callGeminiText(
+      useAppStore.getState().geminiApiKey,
+      [{ text: prompt }, { inlineData: { mimeType: 'audio/wav', data: audioB64 } }],
+      { temperature: 0, signal },
     );
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    if (err instanceof GeminiError) throw new PronunciationCheckError(err.kind, err.message);
+    throw new PronunciationCheckError('other', 'Transcription failed.');
   }
 
-  const payload = (await response.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const transcript = (payload.candidates?.[0]?.content?.parts ?? [])
-    .map((part) => part.text ?? '')
-    .join('')
-    .trim();
   if (!transcript || transcript === NO_SPEECH_MARKER) {
     throw new PronunciationCheckError('no-speech', 'No discernible speech in the recording.');
   }

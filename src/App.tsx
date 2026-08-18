@@ -6,6 +6,7 @@ import { LibraryScreen } from './screens/LibraryScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { MemorizeScreen } from './screens/MemorizeScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
+import { PodcastScreen } from './screens/PodcastScreen';
 import { PracticeScreen } from './screens/PracticeScreen';
 import { TodayScreen } from './screens/TodayScreen';
 import { WidgetPreviewScreen } from './screens/WidgetPreviewScreen';
@@ -43,6 +44,7 @@ export default function App() {
             {view === 'today' && <TodayScreen />}
             {view === 'library' && <LibraryScreen />}
             {view === 'practice' && <PracticeScreen />}
+            {view === 'podcast' && <PodcastScreen />}
             {view === 'widget' && <WidgetPreviewScreen />}
             {view === 'memorize' && <MemorizeScreen />}
           </main>
