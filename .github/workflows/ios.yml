@@ -1,0 +1,79 @@
+# Compile-checks the iOS app and runs the widget's parity tests on a macOS
+# runner, so native breakage shows up here rather than only on a Mac.
+#
+# This builds for the simulator and signs nothing, which is what keeps it
+# runnable with no Apple credentials in the repo. Producing an installable
+# .ipa needs a paid Developer Program membership plus a signing certificate
+# and provisioning profile as repository secrets — see the notes at the bottom
+# of this file for the extra steps when that happens.
+#
+# Manual-only by default: the whole point of the Capacitor setup is that the
+# web workflow stays fast, and macOS runners are slow enough that running this
+# on every push would get in the way.
+name: iOS build
+
+on:
+  workflow_dispatch:
+  # Uncomment to also guard the native project on changes that touch it.
+  # push:
+  #   paths: ['ios/**', 'scripts/export-phrases.mjs', 'capacitor.config.ts']
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Builds the web app, regenerates the widget's bundled phrases +
+      # hash vectors, and copies everything into ios/.
+      - run: npm run ios:sync
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      # No code signing: this proves the Swift compiles and the widget's
+      # JS-parity tests pass, which is what tends to break.
+      - name: Build for simulator
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      # Requires a test target in the scheme; see the widget setup steps in
+      # the README. Kept separate so a missing target is an obvious failure
+      # rather than a silently skipped check.
+      - name: Run widget parity tests
+        working-directory: ios/App
+        continue-on-error: true
+        run: |
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+# ── Getting it onto a phone from here (needs the paid account) ──────────────
+#
+# 1. Export a distribution certificate (.p12) and an App Store provisioning
+#    profile for both the app and the widget extension.
+# 2. Store them base64-encoded as secrets, plus the .p12 password and an App
+#    Store Connect API key.
+# 3. Add a step that imports them into a temporary keychain, then replace the
+#    build above with `xcodebuild -archive` + `-exportArchive`, and upload the
+#    result with `xcrun altool`/`notarytool` to TestFlight.
+#
+# Until then, installing on a device is a Mac + Xcode job: `npm run ios:sync`
+# then `npm run ios:open` and press Run.

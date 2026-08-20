@@ -1,18 +1,20 @@
+import { Capacitor } from '@capacitor/core';
 import { BackIcon } from '../components/icons';
 import { usePhraseOfTheDay } from '../hooks/usePhraseOfTheDay';
 import { LANGUAGES } from '../lib/languages';
 import { useAppStore } from '../store/useAppStore';
 
 /**
- * Concept preview of the future iOS lockscreen widget.
- * Pure mockup — real widgets need the native app (WidgetKit) once the web
- * app is wrapped with Capacitor. The toggle only saves the user's intent.
+ * The lockscreen widget: a preview of what it shows, plus how to add it.
+ *
+ * In the browser this is still a mockup — a real widget only exists in the
+ * native iOS app (WidgetKit), which is why the instructions below only appear
+ * when running there.
  */
 export function WidgetPreviewScreen() {
   const phrase = usePhraseOfTheDay();
   const setView = useAppStore((state) => state.setView);
-  const widgetEnabled = useAppStore((state) => state.widgetEnabled);
-  const setWidgetEnabled = useAppStore((state) => state.setWidgetEnabled);
+  const native = Capacitor.getPlatform() === 'ios';
 
   if (!phrase) return null;
   const meta = LANGUAGES[phrase.language];
@@ -55,33 +57,26 @@ export function WidgetPreviewScreen() {
         </div>
       </div>
 
-      {/* Mock toggle */}
-      <div className="mt-6 flex items-center justify-between rounded-3xl bg-white p-5 shadow-sm">
-        <div>
-          <p className="font-semibold text-slate-700">Add to Lockscreen</p>
-          <p className="text-xs text-slate-400">Saved for when the iOS app ships</p>
-        </div>
-        <button
-          role="switch"
-          aria-checked={widgetEnabled}
-          onClick={() => setWidgetEnabled(!widgetEnabled)}
-          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${
-            widgetEnabled ? 'bg-sage-500' : 'bg-slate-300'
-          }`}
-        >
-          <span
-            className={`absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-              widgetEnabled ? 'translate-x-6' : ''
-            }`}
-          />
-        </button>
-      </div>
-
-      <p className="mt-4 px-2 pb-8 text-xs leading-relaxed text-slate-400">
-        This is a concept preview. Real lockscreen widgets require the native iOS app — planned as
-        a Capacitor wrapper around this exact web app, with the widget built in WidgetKit showing
-        the same phrase of the day. Your preference is stored locally and will carry over.
-      </p>
+      {native ? (
+        <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm">
+          <p className="font-semibold text-slate-700">Add it to your lockscreen</p>
+          <ol className="mt-3 space-y-2 text-sm text-slate-500">
+            <li>1. Press and hold the lockscreen, then tap Customise.</li>
+            <li>2. Tap the area under the clock, then find Daily Phrase.</li>
+            <li>3. Pick the wide widget and close the editor.</li>
+          </ol>
+          <p className="mt-3 text-xs text-slate-400">
+            It also works on the home screen — press and hold the wallpaper, tap +, then search for
+            Daily Phrase. The phrase changes at midnight, and straight away whenever you change it
+            here.
+          </p>
+        </section>
+      ) : (
+        <p className="mt-6 px-2 pb-8 text-xs leading-relaxed text-slate-400">
+          This is a preview of the widget. The real one lives in the iOS app, which wraps this same
+          web app — open this screen there to add it to your lockscreen or home screen.
+        </p>
+      )}
     </div>
   );
 }
