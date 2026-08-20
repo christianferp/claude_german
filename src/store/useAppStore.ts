@@ -22,8 +22,6 @@ interface AppState {
   levels: Partial<Record<Language, Level>>;
   /** Mastered phrases keyed by phrase id; audio blobs live in IndexedDB. */
   mastered: Record<string, MasteredEntry>;
-  /** Mock "Add to Lockscreen" preference from the widget concept screen. */
-  widgetEnabled: boolean;
   /**
    * Manual "change phrase" offset for the phrase of the day. Keyed by
    * date + language + level so it resets automatically at midnight and
@@ -120,7 +118,6 @@ interface AppState {
   setLastEpisodeId: (id: string | null) => void;
   setPodcastRate: (rate: number) => void;
   setEpisodeProgress: (episodeId: string, progress: EpisodeProgress) => void;
-  setWidgetEnabled: (enabled: boolean) => void;
   resetProgress: () => void;
 }
 
@@ -130,7 +127,6 @@ export const useAppStore = create<AppState>()(
       language: null,
       levels: {},
       mastered: {},
-      widgetEnabled: false,
       phraseShuffle: null,
       dailyPick: null,
       geminiApiKey: '',
@@ -249,7 +245,6 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           episodeProgress: { ...state.episodeProgress, [episodeId]: progress },
         })),
-      setWidgetEnabled: (widgetEnabled) => set({ widgetEnabled }),
       resetProgress: () => {
         void audioStorage.clear().catch(() => {
           /* storage may be unavailable; metadata reset still proceeds */
@@ -264,7 +259,6 @@ export const useAppStore = create<AppState>()(
         language: state.language,
         levels: state.levels,
         mastered: state.mastered,
-        widgetEnabled: state.widgetEnabled,
         phraseShuffle: state.phraseShuffle,
         dailyPick: state.dailyPick,
         geminiApiKey: state.geminiApiKey,

@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import type { Phrase } from '../lib/types';
 import { getPhraseById, PHRASES } from '../data/phrases';
 import { dailyPhraseIndex, localDateISO } from '../lib/dailyIndex';
+import { publishWidgetSnapshot } from '../services/widgetBridge';
 import { useAppStore } from '../store/useAppStore';
 
 const shuffleKey = (language: string, level: string) =>
@@ -26,6 +27,7 @@ export function usePhraseOfTheDay(): Phrase | null {
   const mastered = useAppStore((state) => state.mastered);
   const dailyPick = useAppStore((state) => state.dailyPick);
   const setDailyPick = useAppStore((state) => state.setDailyPick);
+  const dailyStreak = useAppStore((state) => state.dailyStreak);
 
   const key = language && level ? shuffleKey(language, level) : null;
 
@@ -54,6 +56,14 @@ export function usePhraseOfTheDay(): Phrase | null {
       setDailyPick({ key, phraseId: selectedId });
     }
   }, [key, selectedId, dailyPick, setDailyPick]);
+
+  // Mirror the pick into the iOS widget. No-op on the web; deduplicated
+  // inside, so this can run on every render without chattering.
+  useEffect(() => {
+    if (selected && level) {
+      publishWidgetSnapshot(selected, level, localDateISO(), dailyStreak);
+    }
+  }, [selected, level, dailyStreak]);
 
   return selected;
 }

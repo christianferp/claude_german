@@ -1,0 +1,1922 @@
+[
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "de:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "de:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "de:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "de:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "es:A1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "es:A2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "es:B1",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-01",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-02",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-03",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-04",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-05",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-06",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-07",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-08",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-09",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-10",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-11",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-12",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-13",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-14",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-15",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-16",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-17",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-18",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-19",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-01-20",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-01-21",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-22",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-23",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-24",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-25",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-26",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-27",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-01-28",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 1
+  },
+  {
+    "dateISO": "2026-01-29",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-30",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-01-31",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-01",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-02",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 0
+  },
+  {
+    "dateISO": "2026-02-03",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-04",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 2
+  },
+  {
+    "dateISO": "2026-02-05",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 3
+  },
+  {
+    "dateISO": "2026-02-06",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-07",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 5
+  },
+  {
+    "dateISO": "2026-02-08",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 4
+  },
+  {
+    "dateISO": "2026-02-09",
+    "seedKey": "es:B2",
+    "poolSize": 6,
+    "expected": 3
+  }
+]

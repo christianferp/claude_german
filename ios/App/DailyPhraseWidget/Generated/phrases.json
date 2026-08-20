@@ -1,0 +1,262 @@
+{
+  "de": {
+    "A1": [
+      {
+        "id": "de-a1-01",
+        "text": "Guten Morgen! Wie geht es dir?",
+        "translation": "Good morning! How are you?"
+      },
+      {
+        "id": "de-a1-02",
+        "text": "Ich hätte gern einen Kaffee, bitte.",
+        "translation": "I'd like a coffee, please."
+      },
+      {
+        "id": "de-a1-03",
+        "text": "Wo ist die Toilette?",
+        "translation": "Where is the toilet?"
+      },
+      {
+        "id": "de-a1-04",
+        "text": "Ich heiße Anna und komme aus der Schweiz.",
+        "translation": "My name is Anna and I come from Switzerland."
+      },
+      {
+        "id": "de-a1-05",
+        "text": "Entschuldigung, sprechen Sie Englisch?",
+        "translation": "Excuse me, do you speak English?"
+      },
+      {
+        "id": "de-a1-06",
+        "text": "Die Rechnung, bitte.",
+        "translation": "The bill, please."
+      }
+    ],
+    "A2": [
+      {
+        "id": "de-a2-01",
+        "text": "Wie komme ich zum Bahnhof?",
+        "translation": "How do I get to the train station?"
+      },
+      {
+        "id": "de-a2-02",
+        "text": "Ich hätte gern ein Zimmer für zwei Nächte.",
+        "translation": "I'd like a room for two nights."
+      },
+      {
+        "id": "de-a2-03",
+        "text": "Was hast du am Wochenende gemacht?",
+        "translation": "What did you do on the weekend?"
+      },
+      {
+        "id": "de-a2-04",
+        "text": "Es tut mir leid, ich habe mich verspätet.",
+        "translation": "I'm sorry, I'm running late."
+      },
+      {
+        "id": "de-a2-05",
+        "text": "Können Sie das bitte wiederholen?",
+        "translation": "Could you please repeat that?"
+      },
+      {
+        "id": "de-a2-06",
+        "text": "Das Wetter ist heute wirklich schön, oder?",
+        "translation": "The weather is really nice today, right?"
+      }
+    ],
+    "B1": [
+      {
+        "id": "de-b1-01",
+        "text": "Meiner Meinung nach ist das eine gute Idee.",
+        "translation": "In my opinion, that is a good idea."
+      },
+      {
+        "id": "de-b1-02",
+        "text": "Ich arbeite seit drei Jahren als Ingenieurin.",
+        "translation": "I have been working as an engineer for three years."
+      },
+      {
+        "id": "de-b1-03",
+        "text": "Könnten wir den Termin auf nächste Woche verschieben?",
+        "translation": "Could we move the appointment to next week?"
+      },
+      {
+        "id": "de-b1-04",
+        "text": "Einerseits stimme ich zu, andererseits habe ich Bedenken.",
+        "translation": "On the one hand I agree, on the other hand I have concerns."
+      },
+      {
+        "id": "de-b1-05",
+        "text": "Ich bin mir nicht sicher, ob das funktionieren wird.",
+        "translation": "I'm not sure whether that will work."
+      },
+      {
+        "id": "de-b1-06",
+        "text": "Je mehr ich übe, desto besser wird mein Deutsch.",
+        "translation": "The more I practice, the better my German gets."
+      }
+    ],
+    "B2": [
+      {
+        "id": "de-b2-01",
+        "text": "Das ist mir völlig über den Kopf gewachsen.",
+        "translation": "That's gotten completely on top of me. (lit. grown over my head)"
+      },
+      {
+        "id": "de-b2-02",
+        "text": "Ich drücke dir die Daumen!",
+        "translation": "I'll keep my fingers crossed for you! (lit. I press my thumbs for you)"
+      },
+      {
+        "id": "de-b2-03",
+        "text": "Wir sollten das Problem an der Wurzel packen.",
+        "translation": "We should tackle the problem at its root."
+      },
+      {
+        "id": "de-b2-04",
+        "text": "Es steht außer Frage, dass sich die Mühe gelohnt hat.",
+        "translation": "It is beyond question that the effort was worth it."
+      },
+      {
+        "id": "de-b2-05",
+        "text": "Er hat mal wieder den Nagel auf den Kopf getroffen.",
+        "translation": "Once again, he hit the nail on the head."
+      },
+      {
+        "id": "de-b2-06",
+        "text": "Auf lange Sicht zahlt sich Geduld aus.",
+        "translation": "In the long run, patience pays off."
+      }
+    ]
+  },
+  "es": {
+    "A1": [
+      {
+        "id": "es-a1-01",
+        "text": "¡Buenos días! ¿Cómo estás?",
+        "translation": "Good morning! How are you?"
+      },
+      {
+        "id": "es-a1-02",
+        "text": "Quisiera un café, por favor.",
+        "translation": "I would like a coffee, please."
+      },
+      {
+        "id": "es-a1-03",
+        "text": "¿Dónde está el baño?",
+        "translation": "Where is the bathroom?"
+      },
+      {
+        "id": "es-a1-04",
+        "text": "Me llamo Anna y soy de Suiza.",
+        "translation": "My name is Anna and I am from Switzerland."
+      },
+      {
+        "id": "es-a1-05",
+        "text": "Perdón, ¿habla usted inglés?",
+        "translation": "Excuse me, do you speak English?"
+      },
+      {
+        "id": "es-a1-06",
+        "text": "La cuenta, por favor.",
+        "translation": "The bill, please."
+      }
+    ],
+    "A2": [
+      {
+        "id": "es-a2-01",
+        "text": "¿Cómo llego a la estación de tren?",
+        "translation": "How do I get to the train station?"
+      },
+      {
+        "id": "es-a2-02",
+        "text": "Quisiera una habitación para dos noches.",
+        "translation": "I would like a room for two nights."
+      },
+      {
+        "id": "es-a2-03",
+        "text": "¿Qué hiciste el fin de semana?",
+        "translation": "What did you do on the weekend?"
+      },
+      {
+        "id": "es-a2-04",
+        "text": "Lo siento, llego tarde.",
+        "translation": "I'm sorry, I'm running late."
+      },
+      {
+        "id": "es-a2-05",
+        "text": "¿Puede repetirlo, por favor?",
+        "translation": "Could you repeat that, please?"
+      },
+      {
+        "id": "es-a2-06",
+        "text": "Hace muy buen tiempo hoy, ¿verdad?",
+        "translation": "The weather is really nice today, right?"
+      }
+    ],
+    "B1": [
+      {
+        "id": "es-b1-01",
+        "text": "En mi opinión, es una buena idea.",
+        "translation": "In my opinion, it is a good idea."
+      },
+      {
+        "id": "es-b1-02",
+        "text": "Trabajo como ingeniera desde hace tres años.",
+        "translation": "I have been working as an engineer for three years."
+      },
+      {
+        "id": "es-b1-03",
+        "text": "¿Podríamos aplazar la reunión hasta la próxima semana?",
+        "translation": "Could we postpone the meeting until next week?"
+      },
+      {
+        "id": "es-b1-04",
+        "text": "Por un lado estoy de acuerdo, por otro tengo mis dudas.",
+        "translation": "On the one hand I agree, on the other I have my doubts."
+      },
+      {
+        "id": "es-b1-05",
+        "text": "No estoy seguro de que esto vaya a funcionar.",
+        "translation": "I'm not sure this is going to work."
+      },
+      {
+        "id": "es-b1-06",
+        "text": "Cuanto más practico, mejor es mi español.",
+        "translation": "The more I practice, the better my Spanish is."
+      }
+    ],
+    "B2": [
+      {
+        "id": "es-b2-01",
+        "text": "Se me ha ido de las manos.",
+        "translation": "It has gotten out of hand. (lit. it has gone from my hands)"
+      },
+      {
+        "id": "es-b2-02",
+        "text": "Cruzo los dedos por ti.",
+        "translation": "I'm crossing my fingers for you."
+      },
+      {
+        "id": "es-b2-03",
+        "text": "Deberíamos atajar el problema de raíz.",
+        "translation": "We should tackle the problem at its root."
+      },
+      {
+        "id": "es-b2-04",
+        "text": "No cabe duda de que el esfuerzo ha valido la pena.",
+        "translation": "There is no doubt that the effort was worth it."
+      },
+      {
+        "id": "es-b2-05",
+        "text": "Has dado en el clavo.",
+        "translation": "You hit the nail on the head."
+      },
+      {
+        "id": "es-b2-06",
+        "text": "A la larga, la paciencia da sus frutos.",
+        "translation": "In the long run, patience bears fruit."
+      }
+    ]
+  }
+}
